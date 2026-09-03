@@ -1,0 +1,8 @@
+build/
+*.o
+*.bin
+*.elf
+*.iso
+__pycache__/
+.vscode/
+.idea/
