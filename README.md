@@ -108,7 +108,7 @@ Built in `C` + `x86 Assembly` on `Arch Linux` · Boots in `QEMU` `—` `720p / 1
 
 ```bash
 # 1 — dependencies (Arch)
-echo "power" | sudo -S pacman -S nasm qemu qemu-system-x86 gcc binutils
+sudo -S pacman -S nasm qemu qemu-system-x86 gcc binutils
 
 # 2 — build  (≈100KB kernel, 220 sectors)
 make -C StrixOS all
