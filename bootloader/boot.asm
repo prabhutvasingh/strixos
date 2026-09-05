@@ -63,12 +63,36 @@ print_string:
     ret
 
 disk_error:
+    push ax
     mov si, msg_disk_err
+    call print_string
+    pop ax
+    push ax
+    mov al, ah
+    shr al, 4
+    call print_hex_nibble
+    pop ax
+    mov al, ah
+    and al, 0x0F
+    call print_hex_nibble
+    mov si, msg_newline
     call print_string
 .halt:
     cli
     hlt
     jmp .halt
+
+print_hex_nibble:
+    and al, 0x0F
+    add al, '0'
+    cmp al, '9'
+    jle .store
+    add al, 7
+.store:
+    mov ah, 0x0E
+    mov bh, 0
+    int 0x10
+    ret
 
 ; =============================================================================
 ; Data
@@ -77,7 +101,8 @@ disk_error:
 boot_drive: db 0
 msg_boot:     db "[Stage1] Loading Stage 2...", 13, 10, 0
 msg_stage2:   db "[Stage2] Loaded, jumping...", 13, 10, 0
-msg_disk_err: db "[ERROR] Disk read failed!", 13, 10, 0
+msg_disk_err: db "[ERROR] Disk read failed! AH=", 0
+msg_newline:  db 13, 10, 0
 
 align 4
 disk_packet:
