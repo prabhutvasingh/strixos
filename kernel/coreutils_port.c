@@ -430,13 +430,13 @@ int strix_stxver(int argc, char **argv){
     }
     // moon ASCII art with colours - for neofetch, CLI terminal only (ANSI true color, FB ignores)
     if(!no_ascii){
-        sput2("\x1b[38;2;220;220;180m      _..._     \x1b[0m\n");
-        sput2("\x1b[38;2;220;220;180m    .'     '.   \x1b[0m\n");
-        sput2("\x1b[38;2;200;200;160m   :  o   o  :  \x1b[0m\n");
-        sput2("\x1b[38;2;180;180;140m   :    _    :  \x1b[0m\n");
-        sput2("\x1b[38;2;200;200;160m    '._   _.'   \x1b[0m\n");
-        sput2("\x1b[38;2;255;255;150m       \"\"\"       \x1b[0m\n");
-        sput2("\x1b[38;2;100;200;255m   StrixOS Moon  \x1b[0m\n");
+        sput2("\x1b[38;2;255;255;0m      _..._     \x1b[0m\n");
+        sput2("\x1b[38;2;255;255;0m    .'     '.   \x1b[0m\n");
+        sput2("\x1b[38;2;255;255;0m   :  o   o  :  \x1b[0m\n");
+        sput2("\x1b[38;2;255;255;0m   :    _    :  \x1b[0m\n");
+        sput2("\x1b[38;2;255;255;0m    '._   _.'   \x1b[0m\n");
+        sput2("\x1b[38;2;255;255;0m       \"\"\"       \x1b[0m\n");
+        sput2("\x1b[38;2;0;255;255m   StrixOS Moon  \x1b[0m\n");
     }
     sput2("\x1b[1;34mOS:\x1b[0m StrixOS 0.11 x86_64\n");
     sput2("\x1b[1;34mHost:\x1b[0m StrixVM QEMU 9.x\n");

@@ -566,13 +566,13 @@ static void dispatch(const char* line){
         char *a=p+3; while(*a==' ') a++;
         do_rgb(a);
     } else if(0==kstrcmp(p,"moon")||0==kstrcmp(p,"logo")){
-        rgb_print("      _..._     \n",220,220,180);
-        rgb_print("    .'     '.   \n",220,220,180);
-        rgb_print("   :  o   o  :  \n",200,200,160);
-        rgb_print("   :    _    :  \n",180,180,140);
-        rgb_print("    '._   _.'   \n",200,200,160);
-        rgb_print("       \"\"\"       \n",255,255,150);
-        rgb_print("   StrixOS Moon  \n",100,200,255);
+        rgb_print("      _..._     \n",255,255,0);
+        rgb_print("    .'     '.   \n",255,255,0);
+        rgb_print("   :  o   o  :  \n",255,255,0);
+        rgb_print("   :    _    :  \n",255,255,0);
+        rgb_print("    '._   _.'   \n",255,255,0);
+        rgb_print("       \"\"\"       \n",255,255,0);
+        rgb_print("   StrixOS Moon  \n",0,255,255);
     } else if(0==kstrcmp(p,"display")||0==kstrcmp(p,"gfx")||0==kstrcmp(p,"fbtest")||0==kstrncmp(p,"display ",8)||0==kstrncmp(p,"gfx ",4)||0==kstrncmp(p,"fbtest ",7)){
         do_display();
     } else if(0==kstrcmp(p,"colors")||0==kstrcmp(p,"palette")||0==kstrcmp(p,"256")||0==kstrncmp(p,"colors ",7)||0==kstrncmp(p,"palette ",8)){
