@@ -23,7 +23,8 @@ void syscall_handler(struct regs* r){
     long ret = -1;
 
     switch(num){
-        case 1: { // Linux write
+        case 1:
+        case 5001: { // write
             int fd = (int)arg1;
             const char* buf = (const char*)arg2;
             size_t len = (size_t)arg3;
@@ -39,7 +40,8 @@ void syscall_handler(struct regs* r){
             }
             break;
         }
-        case 0: { // Linux read
+        case 0:
+        case 5002: { // read
             int fd = (int)arg1;
             void* buf = (void*)arg2;
             size_t len = (size_t)arg3;
@@ -64,28 +66,33 @@ void syscall_handler(struct regs* r){
             }
             break;
         }
-        case 2: { // Linux open
+        case 2:
+        case 5003: { // open
             const char* path = (const char*)arg1;
             int flags = (int)arg2;
             ret = vfs_open(path, flags);
             break;
         }
-        case 3: { // Linux close
+        case 3:
+        case 5004: { // close
             int fd = (int)arg1;
             ret = vfs_close(fd);
             break;
         }
-        case 39: { // Linux getpid
+        case 39:
+        case 5005: { // getpid
             ret = current ? (long)current->pid : -1;
             break;
         }
-        case 1000: { // yield
+        case 1000:
+        case 5006: { // yield
             schedule();
             ret = 0;
             break;
         }
-        case 60: // Linux exit
-        case 231: { // exit_group
+        case 60:
+        case 231:
+        case 5000: { // exit / exit_group
             if(current){
                 current->state = 0;
                 schedule();
@@ -316,6 +323,7 @@ void syscall_handler(struct regs* r){
             break;
         }
         case 12: // Linux brk
+        case 5007: // SYS_BRK
         {
             static uint64_t cur_brk=0x600000;
             if(arg1==0){
