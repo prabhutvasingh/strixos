@@ -137,8 +137,14 @@ void syscall_handler(struct regs* r){
             ret=0;
             break;
         }
-        case 21: { // Linux access
-            ret=0;
+        case 7: { // Linux poll
+            // arg1 fds, arg2 nfds, arg3 timeout
+            // Simulate input ready
+            ret=1;
+            break;
+        }
+        case 23: { // select
+            ret=1;
             break;
         }
         case 13: // rt_sigaction
@@ -179,6 +185,11 @@ void syscall_handler(struct regs* r){
         case 218: // set_tid_address
             ret=current?current->pid:1;
             break;
+        case 270: // pselect6
+        case 271: { // ppoll
+            ret=1;
+            break;
+        }
         case 273: // set_robust_list
         case 334: // rseq
             ret=0;
@@ -205,6 +216,15 @@ void syscall_handler(struct regs* r){
         case 19: // readv
         case 20: { // writev
             ret=-1;
+            break;
+        }
+        case 228: { // clock_gettime
+            if(arg2){
+                // struct timespec { long tv_sec, tv_nsec; }
+                *(long*)arg2=0;
+                *((long*)arg2+1)=0;
+            }
+            ret=0;
             break;
         }
         case 12: // Linux brk
