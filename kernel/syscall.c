@@ -218,6 +218,21 @@ void syscall_handler(struct regs* r){
             ret=-1;
             break;
         }
+        case 10: // mprotect
+        case 28: // madvise
+            ret=0;
+            break;
+        case 35: // nanosleep
+            ret=0;
+            break;
+        case 63: { // uname
+            if(arg1) for(int i=0;i<390;i++) ((char*)arg1)[i]=0;
+            ret=0;
+            break;
+        }
+        case 202: // futex
+            ret=0;
+            break;
         case 228: { // clock_gettime
             if(arg2){
                 // struct timespec { long tv_sec, tv_nsec; }
