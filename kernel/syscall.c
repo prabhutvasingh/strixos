@@ -119,18 +119,36 @@ void syscall_handler(struct regs* r){
         }
         case 9: { // Linux mmap
             extern void* kmalloc(size_t);
-            void* ptr=kmalloc(arg2 ? arg2 : 4096);
-            if(arg1!=0 && ptr){
-                // if MAP_FIXED, copy to requested addr if different
-                if((uint64_t)ptr != arg1){
-                    for(size_t i=0;i<arg2 && i<4096;i++) ((char*)arg1)[i]=0;
-                    ret=(long)arg1;
-                } else ret=(long)ptr;
-            } else ret=ptr? (long)ptr : -1;
+            size_t sz = arg2 ? arg2 : 4096;
+            sz = (sz + 4095) & ~4095;
+            void* ptr=kmalloc(sz + 4096);
+            if(ptr){
+                uintptr_t p = (uintptr_t)ptr;
+                p = (p + 4095) & ~4095;
+                ret = (long)p;
+            } else {
+                ret = -1;
+            }
             break;
         }
-        case 11: { // Linux munmap
+        case 10: // mprotect
+        case 11: // munmap
+        case 28: // madvise
             ret=0;
+            break;
+        case 96: { // gettimeofday
+            struct { int64_t tv_sec, tv_usec; } *tv = (void*)arg1;
+            if(tv){ tv->tv_sec = 0; tv->tv_usec = 0; }
+            ret=0;
+            break;
+        }
+        case 318: { // getrandom
+            char *buf = (char*)arg1;
+            size_t len = (size_t)arg2;
+            if(buf){
+                for(size_t i=0; i<len; i++) buf[i] = (char)(i * 31 + 7);
+            }
+            ret = len;
             break;
         }
         case 4: // stat
@@ -296,12 +314,7 @@ void syscall_handler(struct regs* r){
             ret=total;
             break;
         }
-        case 10: // mprotect
-            ret=0;
-            break;
-        case 28: // madvise
-            ret=0;
-            break;
+
         case 35: // nanosleep
             ret=0;
             break;
@@ -329,7 +342,7 @@ void syscall_handler(struct regs* r){
             if(arg1==0){
                 ret = (long)cur_brk;
             } else {
-                if(arg1 > cur_brk && arg1 < 0x800000){
+                if(arg1 > cur_brk && arg1 < 0x40000000){
                     cur_brk = arg1;
                 } else if(arg1 < cur_brk){
                     cur_brk = arg1;
