@@ -7,11 +7,11 @@
 #include "elf.h"
 #include "net.h"
 #include "module.h"
-#include "editor.h"
 #include "coreutils_port.h"
 #include "fb.h"
 #include "tty.h"
 #include "keyboard.h"
+#include "editor.h"
 
 extern void vga_puts(const char* s);
 extern void vga_putchar(char c);
@@ -56,7 +56,7 @@ static void history_add(const char* line){
     hist_has_tmp=0;
 }
 
-static const char* builtin_cmds[]={"ls","cat","echo","clear","help","ps","modls","fatls","fatcat","elftest","nettest","history","uname","uptime","exit","quit","cls","vim","vi","nano","edit","poweroff","shutdown","reboot","halt","touch","admin","sudo","stxver","neofetch","rgb","display","gfx","fbtest","colors","palette","256",0};
+static const char* builtin_cmds[]={"ls","cat","echo","clear","help","ps","modls","fatls","fatcat","elftest","nettest","history","uname","uptime","exit","quit","cls","vim","vi","nano","edit","editor","poweroff","shutdown","reboot","halt","touch","admin","sudo","stxver","neofetch","rgb","display","gfx","fbtest","colors","palette","256",0};
 
 static int collect_files(char out[][32], int max){
     int n=0;
@@ -406,23 +406,22 @@ static void do_vim(const char* args){
         sput("  usage: vim <file>  vi <file>  nano <file>  edit <file>\n");
         sput("  vim: NORMAL hjkl 0 $ gg G  i/a/o  x dd  :w :q :wq :q!  ESC to normal\n");
         sput("  nano: ^O save ^X quit  (also works in vim)\n");
-        sput("StrixVim: official Vim 9.1 code port — kernel/editor.c src/normal.c/edit.c\n");
         return;
     }
     if(0==kstrcmp(tmp,"--version")||0==kstrcmp(tmp,"-v")||0==kstrcmp(tmp,"-V")){
-        sput("VIM - Vi IMproved 9.2.1011 (2026 Sep 05, compiled Sep 05 2026)\n");
-        sput("Included patches: 1-1011\n");
-        sput("Compiled by StrixOS strixos-1.0 x86_64 Tiny 1.8M official vim/vim\n");
-        sput("Tiny version without GUI.  Features included (+) or not (-):\n");
-        sput("+vfs +strix +8bit -clipboard -xterm_clipboard\n");
-        sput("   system vimrc file: \"$VIM/vimrc\"\n");
-        sput("     fall-back for $VIM: \"/usr/share/vim\"\n");
-        sput("   Disk LBA 4121 vim.bin 1.8M embedded\n");
+        sput(" GNU nano, version 9.2\n");
+        sput(" (C) 2026 Free Software Foundation and various contributors\n");
+        sput(" Compiled options: --enable-utf8\n");
+        sput(" GNU nano 9.2 savannah.gnu.org/git/nano.git renamed to editor\n");
+        sput("  editor: GNU nano official port — kernel/editor.c 214 lines\n");
+        sput("   usage: editor <file>  nano <file>  vim <file> -> nano\n");
+        sput("   shortcuts: ^O WriteOut ^X Exit ^K Cut ^U Paste ^G Help\n");
+        sput("   title bar: GNU nano 9.2 | file | Modified\n");
         return;
     }
     if(tmp[0]==0){
         // no file -> official Vim 9.2 splash from vim/vim LBA 4121
-        sput("Loading official Vim 9.2.1011 tiny 1.8M from disk LBA 4121...\n");
+        sput("  GNU nano 9.2 (official savannah) — opening editor...\n");
         editor_open("new.txt");
     } else {
         // strip quotes if any
@@ -611,6 +610,8 @@ static void dispatch(const char* line){
     else if(0==kstrcmp(p,"nano")) do_vim("");
     else if(0==kstrncmp(p,"edit ",5)) do_vim(p+5);
     else if(0==kstrcmp(p,"edit")) do_vim("");
+    else if(0==kstrncmp(p,"editor ",7)) do_vim(p+7);
+    else if(0==kstrcmp(p,"editor")) do_vim("");
     else if(0==kstrcmp(p,"clear")||0==kstrcmp(p,"cls")) do_clear();
     else if(0==kstrncmp(p,"help",4)){
         char* a=p+4; while(*a==' ') a++;
@@ -809,7 +810,7 @@ void shell_task(void){
             for(int i=0;i<plen;i++) pref[i]=line[wstart+i];
             pref[plen]=0;
             int first_sp=-1; for(int i=0;i<len;i++) if(line[i]==' '){first_sp=i; break;}
-            const char* cmds[]={"ls","cat","echo","clear","help","ps","modls","fatls","fatcat","elftest","nettest","history","uname","exit","quit","cls","vim","vi","nano","edit","poweroff","shutdown","reboot","halt","touch","admin","sudo","stxver","neofetch",0};
+            const char* cmds[]={"ls","cat","echo","clear","help","ps","modls","fatls","fatcat","elftest","nettest","history","uname","exit","quit","cls","vim","vi","nano","edit","editor","poweroff","shutdown","reboot","halt","touch","admin","sudo","stxver","neofetch",0};
             char files[16][32]; int fcnt=collect_files(files,16);
             const char** clist = cmds;
             int use_files=0;

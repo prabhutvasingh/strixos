@@ -40,11 +40,10 @@ KFAT        = kernel/fat.c
 KELF        = kernel/elf.c
 KNET        = kernel/net.c
 KEDITOR     = kernel/editor.c
-KCOREPORT   = kernel/coreutils_port.c
+ KCOREPORT   = kernel/coreutils_port.c
 KFB         = kernel/fb.c
 KTTY        = kernel/tty.c
 KKBD        = kernel/keyboard.c
-KVIM        = kernel/vim_splash.c
 
 BOOT_BIN = $(BUILD_DIR)/boot.bin
 S16_BIN  = $(BUILD_DIR)/stage2_16.bin
@@ -70,13 +69,11 @@ KMODULE_OBJ= $(BUILD_DIR)/module.o
 KFAT_OBJ   = $(BUILD_DIR)/fat.o
 KELF_OBJ   = $(BUILD_DIR)/elf.o
 KNET_OBJ   = $(BUILD_DIR)/net.o
-KEDITOR_OBJ= $(BUILD_DIR)/editor.o
-KCOREPORT_OBJ= $(BUILD_DIR)/coreutils_port.o
+KEDITOR_OBJ = $(BUILD_DIR)/editor.o
+ KCOREPORT_OBJ= $(BUILD_DIR)/coreutils_port.o
 KFB_OBJ      = $(BUILD_DIR)/fb.o
 KTTY_OBJ     = $(BUILD_DIR)/tty.o
 KKBD_OBJ     = $(BUILD_DIR)/keyboard.o
-KVIM_OBJ     = $(BUILD_DIR)/vim_splash.o
-KOBJS      = $(KENTRY_OBJ) $(KSRC_OBJ) $(KIDT_OBJ) $(KPIC_OBJ) $(KISR_OBJ) $(KPMM_OBJ) $(KVMM_OBJ) $(KHEAP_OBJ) $(KPROC_OBJ) $(KTIMER_OBJ) $(KCTX_OBJ) $(KSYSC_OBJ) $(KVFS_OBJ) $(KINITRD_OBJ) $(KSHELL_OBJ) $(KMODULE_OBJ) $(KFAT_OBJ) $(KELF_OBJ) $(KNET_OBJ) $(KEDITOR_OBJ) $(KCOREPORT_OBJ) $(KFB_OBJ) $(KTTY_OBJ) $(KKBD_OBJ) $(KVIM_OBJ)
 KERNEL_ELF = $(BUILD_DIR)/kernel.elf
 KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 
@@ -161,6 +158,7 @@ $(KNET_OBJ): $(KNET) kernel/net.h
 $(KEDITOR_OBJ): $(KEDITOR) kernel/editor.h kernel/vfs.h kernel/heap.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
+
 $(KCOREPORT_OBJ): $(KCOREPORT) kernel/coreutils_port.h kernel/vfs.h kernel/heap.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -173,8 +171,8 @@ $(KTTY_OBJ): $(KTTY) kernel/tty.h kernel/fb.h kernel/keyboard.h
 $(KKBD_OBJ): $(KKBD) kernel/keyboard.h kernel/fb.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(KVIM_OBJ): $(KVIM)
-	$(CC) $(CFLAGS) -c $< -o $@
+
+KOBJS = $(KENTRY_OBJ) $(KISR_OBJ) $(KCTX_OBJ) $(KSRC_OBJ) $(KIDT_OBJ) $(KPIC_OBJ) $(KPMM_OBJ) $(KVMM_OBJ) $(KHEAP_OBJ) $(KPROC_OBJ) $(KTIMER_OBJ) $(KSYSC_OBJ) $(KVFS_OBJ) $(KINITRD_OBJ) $(KSHELL_OBJ) $(KMODULE_OBJ) $(KFAT_OBJ) $(KELF_OBJ) $(KNET_OBJ) $(KEDITOR_OBJ) $(KCOREPORT_OBJ) $(KFB_OBJ) $(KTTY_OBJ) $(KKBD_OBJ)
 
 $(KERNEL_ELF): $(KOBJS)
 	$(LD) $(LDFLAGS) -o $@ $^
@@ -192,13 +190,12 @@ $(VIM_BIN): /tmp/vim_tiny
 	@echo "Vim Tiny: $$(wc -c < $@) bytes official 9.2.1011"
 
 # Disk: 4M for StrixOS + official Vim tiny 1.8M (sector 0 boot, 1-24 stage2, 25+ kernel 2M)
-$(BUILD_DIR)/os-image.bin: $(BOOT_BIN) $(STAGE2_BIN) $(KERNEL_BIN) $(VIM_BIN)
+$(BUILD_DIR)/os-image.bin: $(BOOT_BIN) $(STAGE2_BIN) $(KERNEL_BIN)
 	@echo "=== Building OS image ==="
 	dd if=/dev/zero of=$@ bs=1M count=4 2>/dev/null
 	dd if=$(BOOT_BIN) of=$@ bs=512 count=1 conv=notrunc 2>/dev/null
 	dd if=$(STAGE2_BIN) of=$@ bs=512 seek=1 conv=notrunc 2>/dev/null
 	dd if=$(KERNEL_BIN) of=$@ bs=512 seek=25 conv=notrunc 2>/dev/null
-	dd if=$(VIM_BIN) of=$@ bs=512 seek=4121 conv=notrunc 2>/dev/null
 	@echo "Boot  : $$(wc -c < $(BOOT_BIN)) bytes"
 	@echo "Stage2: $$(wc -c < $(STAGE2_BIN)) bytes (16:$$(wc -c < $(S16_BIN)) 32:$$(wc -c < $(S32_BIN)) 64:$$(wc -c < $(S64_BIN)))"
 	@echo "Kernel: $$(wc -c < $(KERNEL_BIN)) bytes"
