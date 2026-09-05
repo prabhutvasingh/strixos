@@ -42,19 +42,23 @@ void editor_open(const char* path){
             // Call entry - nano expects argc/argv/env, we pass dummy
             // Use assembly to call with clean stack
             // Setup user stack for musl _start: argc=1, argv=["nano",0], envp=[0]
+            // Call main directly at 0x4010A0 instead of _start to bypass TLS arg parsing that GP faults
+            // Setup argv on heap
+            extern void* kmalloc(size_t);
+            char *arg0=(char*)kmalloc(5); arg0[0]='n'; arg0[1]='a'; arg0[2]='n'; arg0[3]='o'; arg0[4]=0;
+            char **argv=(char**)kmalloc(16); argv[0]=arg0; argv[1]=0;
+            // Call main(1, argv)
+            long ret;
             __asm__ volatile(
-                "mov $0x7FF00, %%rsp\n"
-                "push $0\n" // envp NULL
-                "push $0\n" // argv[1] NULL
-                "push %0\n" // argv[0] "nano"
-                "mov %%rsp, %%rsi\n" // argv
-                "push $1\n" // argc
-                "mov $1, %%rdi\n" // argc in rdi also for some
-                "call *%1\n"
-                :: "r"("nano"), "r"(entry) : "memory", "rdi", "rsi"
+                "movq %1, %%rdi\n"
+                "movq %2, %%rsi\n"
+                "callq *%3\n"
+                "movq %%rax, %0\n"
+                : "=r"(ret) : "r"((long)1), "r"(argv), "r"((void*)0x4010A0) : "memory", "rdi", "rsi", "rax"
             );
+            const char *msg2="[ELF] nano main returned\n";
+            for(const char *a=msg2;*a;a++) outb(0x3F8,*a);
             // if returns, continue to Edit
-            const char *msg2="[ELF] nano exited, falling to Edit\n";
             for(const char *a=msg2;*a;a++) outb(0x3F8,*a);
         }
     }
