@@ -95,9 +95,9 @@ void syscall_handler(struct regs* r){
         case 5000: { // exit / exit_group
             if(current){
                 current->state = 0;
-                schedule();
             }
-            ret = 0;
+            schedule();
+            for(;;) asm volatile("cli; hlt");
             break;
         }
         case 16: { // Linux ioctl - termios for nano
