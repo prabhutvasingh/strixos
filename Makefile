@@ -44,6 +44,7 @@ KCOREPORT   = kernel/coreutils_port.c
 KFB         = kernel/fb.c
 KTTY        = kernel/tty.c
 KKBD        = kernel/keyboard.c
+KVIM        = kernel/vim_splash.c
 
 BOOT_BIN = $(BUILD_DIR)/boot.bin
 S16_BIN  = $(BUILD_DIR)/stage2_16.bin
@@ -74,7 +75,8 @@ KCOREPORT_OBJ= $(BUILD_DIR)/coreutils_port.o
 KFB_OBJ      = $(BUILD_DIR)/fb.o
 KTTY_OBJ     = $(BUILD_DIR)/tty.o
 KKBD_OBJ     = $(BUILD_DIR)/keyboard.o
-KOBJS      = $(KENTRY_OBJ) $(KSRC_OBJ) $(KIDT_OBJ) $(KPIC_OBJ) $(KISR_OBJ) $(KPMM_OBJ) $(KVMM_OBJ) $(KHEAP_OBJ) $(KPROC_OBJ) $(KTIMER_OBJ) $(KCTX_OBJ) $(KSYSC_OBJ) $(KVFS_OBJ) $(KINITRD_OBJ) $(KSHELL_OBJ) $(KMODULE_OBJ) $(KFAT_OBJ) $(KELF_OBJ) $(KNET_OBJ) $(KEDITOR_OBJ) $(KCOREPORT_OBJ) $(KFB_OBJ) $(KTTY_OBJ) $(KKBD_OBJ)
+KVIM_OBJ     = $(BUILD_DIR)/vim_splash.o
+KOBJS      = $(KENTRY_OBJ) $(KSRC_OBJ) $(KIDT_OBJ) $(KPIC_OBJ) $(KISR_OBJ) $(KPMM_OBJ) $(KVMM_OBJ) $(KHEAP_OBJ) $(KPROC_OBJ) $(KTIMER_OBJ) $(KCTX_OBJ) $(KSYSC_OBJ) $(KVFS_OBJ) $(KINITRD_OBJ) $(KSHELL_OBJ) $(KMODULE_OBJ) $(KFAT_OBJ) $(KELF_OBJ) $(KNET_OBJ) $(KEDITOR_OBJ) $(KCOREPORT_OBJ) $(KFB_OBJ) $(KTTY_OBJ) $(KKBD_OBJ) $(KVIM_OBJ)
 KERNEL_ELF = $(BUILD_DIR)/kernel.elf
 KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 
@@ -169,6 +171,9 @@ $(KTTY_OBJ): $(KTTY) kernel/tty.h kernel/fb.h kernel/keyboard.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(KKBD_OBJ): $(KKBD) kernel/keyboard.h kernel/fb.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(KVIM_OBJ): $(KVIM)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(KERNEL_ELF): $(KOBJS)

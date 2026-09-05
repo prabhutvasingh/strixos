@@ -135,7 +135,31 @@ static void ed_load(const char* path){
     size_t l=elen(p); while(l>0&&p[l-1]==' ') l--;
     p[l]=0;
     if(p[0]){ size_t i=0; while(p[i]&&i<31){ed_filename[i]=p[i];i++;} ed_filename[i]=0; }
-    if(ed_filename[0]==0){ ed_num_lines=1; ed_lines[0][0]=0; ed_lens[0]=0; return; }
+    if(ed_filename[0]==0){
+        // official Vim 9.2 splash for `vim` without file
+        const char *splash[]={
+            "",
+            "                VIM - Vi IMproved",
+            "",
+            "                 version 9.2.1011",
+            "             by Bram Moolenaar et al.",
+            "       Vim is open source and freely distributable",
+            "",
+            "              Help poor children in Uganda!",
+            "      type  :help Kuwasha<Enter>    for information",
+            "",
+            "      type  :q<Enter>               to exit",
+            "      type  :help<Enter>  or  <F1>  for on-line help",
+            "      type  :help version9<Enter>   for version info",
+            ""
+        };
+        ed_num_lines=14;
+        for(int i=0;i<14;i++){
+            int ll=0; while(splash[i][ll]&&ll<ED_MAX_COL-1){ed_lines[i][ll]=splash[i][ll]; ll++;}
+            ed_lines[i][ll]=0; ed_lens[i]=ll;
+        }
+        ed_cx=0; ed_cy=0; return;
+    }
     // try vfs then fat
     int fd = sys_open(ed_filename,0);
     char buf[2048];
@@ -146,6 +170,31 @@ static void ed_load(const char* path){
         if(fd>=0){ n=fat_read(fd,buf,2047); fat_close(fd); }
     }
     if(n<=0){
+        // vim without file -> official splash if new.txt
+        if(0==ecmp(ed_filename,"new.txt")){
+            const char *splash[]={
+                "",
+                "                VIM - Vi IMproved",
+                "",
+                "                 version 9.2.1011",
+                "             by Bram Moolenaar et al.",
+                "       Vim is open source and freely distributable",
+                "",
+                "              Help poor children in Uganda!",
+                "      type  :help Kuwasha<Enter>    for information",
+                "",
+                "      type  :q<Enter>               to exit",
+                "      type  :help<Enter>  or  <F1>  for on-line help",
+                "      type  :help version9<Enter>   for version info",
+                ""
+            };
+            ed_num_lines=14;
+            for(int i=0;i<14;i++){
+                int ll=0; while(splash[i][ll]&&ll<ED_MAX_COL-1){ed_lines[i][ll]=splash[i][ll]; ll++;}
+                ed_lines[i][ll]=0; ed_lens[i]=ll;
+            }
+            ed_cx=0; ed_cy=0; return;
+        }
         ed_num_lines=1; ed_lines[0][0]=0; ed_lens[0]=0; return;
     }
     buf[n]=0;
