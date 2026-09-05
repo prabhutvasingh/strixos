@@ -315,7 +315,13 @@ void syscall_handler(struct regs* r){
             break;
         }
 
-        case 35: // nanosleep
+        case 24: // sched_yield
+        case 32: // dup
+        case 33: // dup2
+        case 79: // getcwd
+        case 80: // chdir
+        case 89: // readlink
+        case 110: // getppid
             ret=0;
             break;
         case 63: { // uname
