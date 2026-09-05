@@ -127,6 +127,61 @@ void syscall_handler(struct regs* r){
             ret=0;
             break;
         }
+        case 5: { // Linux fstat
+            // arg1 fd, arg2 statbuf
+            if(arg2) for(int i=0;i<144;i++) ((char*)arg2)[i]=0;
+            ret=0;
+            break;
+        }
+        case 8: { // Linux lseek
+            ret=0;
+            break;
+        }
+        case 21: { // Linux access
+            ret=0;
+            break;
+        }
+        case 13: // rt_sigaction
+        case 14: // rt_sigprocmask
+            ret=0;
+            break;
+        case 72: // fcntl
+            ret=0;
+            break;
+        case 158: // arch_prctl
+            ret=0;
+            break;
+        case 218: // set_tid_address
+            ret=current?current->pid:1;
+            break;
+        case 273: // set_robust_list
+        case 334: // rseq
+            ret=0;
+            break;
+        case 231: // exit_group
+            if(current){ current->state=0; schedule(); }
+            ret=0;
+            break;
+        case 257: { // openat
+            // arg1 dirfd, arg2 path, arg3 flags
+            const char* path=(const char*)arg2;
+            int flags=(int)arg3;
+            // ignore dirfd, handle absolute or relative
+            if(path) ret=vfs_open(path, flags);
+            else ret=-1;
+            // if vfs_open fails try without leading /
+            if(ret<0 && path && path[0]=='/') ret=vfs_open(path+1, flags);
+            break;
+        }
+        case 17: { // pread64
+            ret=-1;
+            break;
+        }
+        case 19: // readv
+        case 20: { // writev
+            ret=-1;
+            break;
+        }
         case 12: // Linux brk
         case SYS_BRK: {
             // arg1 = new brk, if 0 return current brk
@@ -139,9 +194,18 @@ void syscall_handler(struct regs* r){
             }
             break;
         }
-        default:
+        default: {
             vga_puts("[SYS] unknown "); 
+            char hex[]="0123456789ABCDEF";
+            for(int i=28;i>=0;i-=4){ char c[2]={hex[(num>>i)&0xF],0}; vga_puts(c); }
+            vga_puts(" ");
+            // also serial
+            const char *m="[SYS] unknown "; for(const char *a=m;*a;a++) outb(0x3F8,*a);
+            for(int i=28;i>=0;i-=4){ char c=hex[(num>>i)&0xF]; outb(0x3F8,c); }
+            outb(0x3F8,'\n');
             ret = -1;
+            break;
+        }
             break;
     }
     r->rax = ret;
