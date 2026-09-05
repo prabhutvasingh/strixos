@@ -242,7 +242,7 @@ run-gui: $(BUILD_DIR)/os-image.bin
 	$(QEMU) -drive file=$<,format=raw,index=0,media=disk -m 256 -serial stdio -vga std -display gtk,zoom-to-fit=off
 
 run-iso: $(ISO)
-	$(QEMU) -drive file=$<,format=raw,index=0,media=disk -m 256 -serial stdio -vga std -display gtk,zoom-to-fit=off
+	$(QEMU) -cdrom $< -m 256 -serial stdio -vga std -display gtk,zoom-to-fit=off -boot d
 
 debug: $(BUILD_DIR)/os-image.bin
 	$(QEMU) -drive file=$<,format=raw,index=0,media=disk -m 256 -serial stdio -display none -vga std -S -gdb tcp::1234 &
