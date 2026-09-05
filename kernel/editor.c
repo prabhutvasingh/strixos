@@ -73,7 +73,7 @@ void nano_open(const char* path){
         // "  GNU nano 9.2                 filename                  Modified  "
         for(int i=0;i<80;i++) title[i]=' ';
         title[79]=0;
-        const char *left="  GNU nano 9.2";
+        const char *left="  Edit";
         for(int i=0; left[i]; i++) title[2+i]=left[i];
         int fnlen=0; while(filename[fnlen]&&fnlen<20) fnlen++;
         int fpos=40 - fnlen/2;
