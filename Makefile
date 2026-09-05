@@ -184,10 +184,10 @@ $(KERNEL_BIN): $(KERNEL_ELF)
 	objcopy -O binary $< $@
 	@echo "Kernel BIN: $$(wc -c < $@) bytes"
 
-# Disk: sector 0 boot (512), sectors 1-24 stage2 (24*512=12288), sector 25+ kernel (sector 26 in CHS 1-indexed)
+# Disk: 4M for StrixOS + official Vim tiny 1.5M (sector 0 boot, 1-24 stage2, 25+ kernel 2M)
 $(BUILD_DIR)/os-image.bin: $(BOOT_BIN) $(STAGE2_BIN) $(KERNEL_BIN)
 	@echo "=== Building OS image ==="
-	dd if=/dev/zero of=$@ bs=1M count=1 2>/dev/null
+	dd if=/dev/zero of=$@ bs=1M count=4 2>/dev/null
 	dd if=$(BOOT_BIN) of=$@ bs=512 count=1 conv=notrunc 2>/dev/null
 	dd if=$(STAGE2_BIN) of=$@ bs=512 seek=1 conv=notrunc 2>/dev/null
 	dd if=$(KERNEL_BIN) of=$@ bs=512 seek=25 conv=notrunc 2>/dev/null

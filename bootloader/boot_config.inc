@@ -28,7 +28,7 @@ STAGE64_SECTORS equ STAGE64_SIZE / 512   ; 8
 STAGE2_SECTORS  equ STAGE2_SIZE / 512    ; 24
 KERNEL_LBA_START equ 1 + STAGE2_SECTORS  ; LBA 25
 KERNEL_SECTOR_START equ KERNEL_LBA_START + 1  ; CHS sector number 26 (1-indexed)
-KERNEL_SECTORS  equ 220                  ; 110KB max kernel (8-bit palette, was 195)
+KERNEL_SECTORS  equ 4096                 ; 2M kernel for official Vim tiny 1.5M (was 220)
 
 KERNEL_OFFSET   equ 0x100000     ; Final kernel location (1MB)
 KERNEL_TMP      equ 0x10000      ; Temp bounce buffer for BIOS reads
