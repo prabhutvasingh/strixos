@@ -421,7 +421,8 @@ static void do_vim(const char* args){
     }
     if(tmp[0]==0){
         // no file -> official Vim 9.2 splash from vim/vim LBA 4121
-        sput("  GNU nano 9.2 (official savannah) — opening editor...\n");
+        extern int force_official;
+        if(force_official) sput("  GNU nano 9.2 (official savannah) — opening editor...\n"); else sput("  Edit — opening editor...\n");
         editor_open("new.txt");
     } else {
         // strip quotes if any

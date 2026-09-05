@@ -8,7 +8,7 @@
 #include "elf.h"
 void* elf_load_nano_lba(uint32_t lba);
 int elf_load(void* data, void (**entry)(void));
-static int force_official=0;
+int force_official=0;
 void editor_set_official(int v){ force_official=v; }
 void editor_open(const char* path){
     if(force_official){
