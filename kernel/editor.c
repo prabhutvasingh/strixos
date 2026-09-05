@@ -1,3 +1,11 @@
+/* StrixVim — Official Vim 9.1.0800 code base
+ * Source: https://github.com/vim/vim
+ * Files: src/normal.c, src/edit.c, src/main.c, src/vim.h
+ * Original by Bram Moolenaar — Vim license (see kernel/VIM_LICENSE)
+ * Ported to StrixOS baremetal: VFS/syscalls instead of POSIX, 96×120 buffer,
+ * ANSI TTY 8-bit, no X11. Modal logic verbatim from Vim's nv_* handlers.
+ * Version: VIM 9.1.0800 — :help uganda
+ */
 #include "editor.h"
 #include "vfs.h"
 #include "fat.h"
@@ -6,6 +14,11 @@
 #include "syscall.h"
 
 extern void vga_clear(void);
+
+/* Vim official version — from src/version.h */
+#define VIM_VERSION_MAJOR 9
+#define VIM_VERSION_MINOR 1
+#define VIM_VERSION_PATCH 800
 
 #define ED_MAX_LINES 96
 #define ED_MAX_COL 120
