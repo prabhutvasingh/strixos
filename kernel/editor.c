@@ -24,26 +24,52 @@ void editor_open(const char* path){
     if(force_official){
         void *nano_data=elf_load_nano_lba(4121);
         if(nano_data){
-        void (*entry)(void)=0;
-        if(elf_load(nano_data, &entry)==0 && entry){
-            const char *msg="[ELF] jumping to official static nano _start 0x4016DC...\n";
-            for(const char *a=msg;*a;a++) outb(0x3F8,*a);
-            // Call _start with heap argv
-            extern void* kmalloc(size_t);
-            char *arg0=(char*)kmalloc(5); arg0[0]='n'; arg0[1]='a'; arg0[2]='n'; arg0[3]='o'; arg0[4]=0;
-            __asm__ volatile(
-                "mov $0x7FF00, %%rsp\n"
-                "push $0\n" // envp
-                "push $0\n" // argv[1]
-                "push %0\n" // argv[0]
-                "mov %%rsp, %%rsi\n"
-                "push $1\n" // argc
-                "mov %%rsp, %%rsp\n" // keep rsp at argc
-                "jmp *%1\n"
-                :: "r"(arg0), "r"(entry) : "memory"
-            );
-            const char *msg2="[ELF] nano _start returned\n";
-            for(const char *a=msg2;*a;a++) outb(0x3F8,*a);
+            struct elf_hdr *h=nano_data;
+            void (*entry)(void)=0;
+            if(elf_load(nano_data, &entry)==0 && entry){
+                const char *msg="[ELF] jumping to official static nano _start...\n";
+                for(const char *a=msg;*a;a++) outb(0x3F8,*a);
+                extern void* kmalloc(size_t);
+                uint64_t *stack_buf = kmalloc(8192);
+                char *arg0 = (char*)kmalloc(8);
+                arg0[0]='n'; arg0[1]='a'; arg0[2]='n'; arg0[3]='o'; arg0[4]=0;
+
+                uint64_t ph_addr = (uint64_t)nano_data + h->phoff;
+                int idx = 0;
+                stack_buf[idx++] = 1; // argc = 1
+                stack_buf[idx++] = (uint64_t)arg0; // argv[0]
+                stack_buf[idx++] = 0; // argv[1] (NULL)
+                stack_buf[idx++] = 0; // envp[0] (NULL)
+
+                // auxv
+                stack_buf[idx++] = 16; stack_buf[idx++] = 0;     // AT_HWCAP
+                stack_buf[idx++] = 6;  stack_buf[idx++] = 4096;  // AT_PAGESZ
+                stack_buf[idx++] = 17; stack_buf[idx++] = 100;   // AT_CLKTCK
+                stack_buf[idx++] = 3;  stack_buf[idx++] = ph_addr; // AT_PHDR
+                stack_buf[idx++] = 4;  stack_buf[idx++] = 56;    // AT_PHENT
+                stack_buf[idx++] = 5;  stack_buf[idx++] = h->phnum; // AT_PHNUM
+                stack_buf[idx++] = 7;  stack_buf[idx++] = 0;     // AT_BASE
+                stack_buf[idx++] = 8;  stack_buf[idx++] = 0;     // AT_FLAGS
+                stack_buf[idx++] = 9;  stack_buf[idx++] = h->entry; // AT_ENTRY
+                stack_buf[idx++] = 11; stack_buf[idx++] = 0;     // AT_UID
+                stack_buf[idx++] = 12; stack_buf[idx++] = 0;     // AT_EUID
+                stack_buf[idx++] = 13; stack_buf[idx++] = 0;     // AT_GID
+                stack_buf[idx++] = 14; stack_buf[idx++] = 0;     // AT_EGID
+                stack_buf[idx++] = 23; stack_buf[idx++] = 0;     // AT_SECURE
+                stack_buf[idx++] = 25; stack_buf[idx++] = (uint64_t)(stack_buf + 500); // AT_RANDOM
+                stack_buf[idx++] = 0;  stack_buf[idx++] = 0;     // AT_NULL
+
+                __asm__ volatile(
+                    "mov %0, %%rsp\n"
+                    "xor %%rax, %%rax\n"
+                    "xor %%rbx, %%rbx\n"
+                    "xor %%rcx, %%rcx\n"
+                    "xor %%rdx, %%rdx\n"
+                    "xor %%rsi, %%rsi\n"
+                    "xor %%rdi, %%rdi\n"
+                    "jmp *%1\n"
+                    :: "r"(stack_buf), "r"(entry) : "memory"
+                );
             }
         }
         force_official=0;
