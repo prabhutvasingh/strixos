@@ -59,6 +59,12 @@ void editor_open(const char* path){
                 stack_buf[idx++] = 25; stack_buf[idx++] = (uint64_t)(stack_buf + 500); // AT_RANDOM
                 stack_buf[idx++] = 0;  stack_buf[idx++] = 0;     // AT_NULL
 
+                // Set up %fs base (Thread Control Block for musl libc)
+                uint64_t tcb_addr = (uint64_t)(stack_buf + 100);
+                uint32_t tcb_lo = tcb_addr & 0xFFFFFFFF;
+                uint32_t tcb_hi = (tcb_addr >> 32) & 0xFFFFFFFF;
+                __asm__ volatile("wrmsr" :: "c"(0xC0000100), "a"(tcb_lo), "d"(tcb_hi) : "memory");
+
                 __asm__ volatile(
                     "mov %0, %%rsp\n"
                     "xor %%rax, %%rax\n"
@@ -67,6 +73,15 @@ void editor_open(const char* path){
                     "xor %%rdx, %%rdx\n"
                     "xor %%rsi, %%rsi\n"
                     "xor %%rdi, %%rdi\n"
+                    "xor %%rbp, %%rbp\n"
+                    "xor %%r8, %%r8\n"
+                    "xor %%r9, %%r9\n"
+                    "xor %%r10, %%r10\n"
+                    "xor %%r11, %%r11\n"
+                    "xor %%r12, %%r12\n"
+                    "xor %%r13, %%r13\n"
+                    "xor %%r14, %%r14\n"
+                    "xor %%r15, %%r15\n"
                     "jmp *%1\n"
                     :: "r"(stack_buf), "r"(entry) : "memory"
                 );
