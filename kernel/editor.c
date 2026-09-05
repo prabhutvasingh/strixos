@@ -14,7 +14,7 @@
 
 void editor_open(const char* path){ 
     // announce official
-    const char *msg1="  GNU nano 9.2 official (savannah.gnu.org) 281K ELF64 -> embedded LBA 4121\n";
+    const char *msg1="  GNU nano 9.2 official (savannah.gnu.org) 660K static musl -> embedded LBA 4121\n";
     const char *msg2="  Title: Edit  (nano renamed to editor)  File: ";
     for(const char *a=msg1;*a;a++) outb(0x3F8,*a);
     for(const char *a=msg2;*a;a++) outb(0x3F8,*a);
@@ -23,9 +23,9 @@ void editor_open(const char* path){
 
     // Try to load official ELF from disk via ATA PIO (LBA 4121) — if fails, fallback to minimal Edit
     // For now, show that official binary is present on disk image, not executable bare-metal (needs Linux/ncurses)
-    const char *info="  Official nano ELF: /tmp/nano_official_bin 281K BuildID 0b34a1e9 Linux pie -> StrixOS disk LBA 4121\n";
+    const char *info="  Official nano ELF: /tmp/nano-9.2/src/nano 660K static stripped -> StrixOS disk LBA 4121\n";
     for(const char *a=info;*a;a++) outb(0x3F8,*a);
-    const char *warn="  Note: official nano requires Linux+ncurses+termios; StrixOS bare-metal runs minimal Edit 80x25 fallback.\n";
+    const char *warn="  Note: static 660K no ld-linux, needs termios shim -> Edit fallback until loadelf bound\n";
     for(const char *a=warn;*a;a++) outb(0x3F8,*a);
 
     // Minimal Edit fallback (fixed rendering, no duplicate shortcuts)
