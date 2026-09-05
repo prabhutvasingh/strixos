@@ -230,7 +230,7 @@ $(ISO): $(BUILD_DIR)/os-image.bin
 	@echo "Boot raw: dd if=strixos.img of=/dev/sdX bs=512" >> $(ISO_DIR)/README.txt
 	@echo "QEMU raw: qemu-system-x86_64 -drive file=strixos.img,format=raw -m 256" >> $(ISO_DIR)/README.txt
 	@echo "QEMU iso: qemu-system-x86_64 -cdrom $(ISO) -m 256 -boot d" >> $(ISO_DIR)/README.txt
-	@xorriso -as mkisofs -o $@ -V STRIXOS_1_0 -J -R -iso-level 3 -v $(ISO_DIR) 2>&1 | tail -n 20
+	@xorriso -as mkisofs -o $@ -V STRIXOS_1_0 -b strixos.img -hard-disk-boot -boot-load-size 8192 -J -R -iso-level 2 -v $(ISO_DIR) 2>&1 | tail -n 20
 	@echo "ISO  : $$(wc -c < $@) bytes  -> $@"
 	@echo "IMG  : $$(wc -c < $(BUILD_DIR)/os-image.bin) bytes (raw bootable)"
 	@echo "Both built for convenience: use .iso for drag/drop, .img/.bin for dd"
