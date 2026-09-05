@@ -23,7 +23,7 @@ void syscall_handler(struct regs* r){
     long ret = -1;
 
     switch(num){
-        case SYS_WRITE: {
+        case 1: { // Linux write
             int fd = (int)arg1;
             const char* buf = (const char*)arg2;
             size_t len = (size_t)arg3;
@@ -39,18 +39,16 @@ void syscall_handler(struct regs* r){
             }
             break;
         }
-        case 0: // Linux read
-        case SYS_READ: {
+        case 0: { // Linux read
             int fd = (int)arg1;
             void* buf = (void*)arg2;
             size_t len = (size_t)arg3;
             if(fd==0){
-                // accept input from BOTH QEMU window (keyboard) and terminal (serial) when in graphics
                 char* b=(char*)buf;
                 size_t got=0;
                 while(got<len){
                     char c;
-                    if(got==0) c=keyboard_getc(); // keyboard_getc already polls both sources
+                    if(got==0) c=keyboard_getc();
                     else if(!keyboard_try_getc(&c)){
                         if(inb(0x3F8+5)&1) c=inb(0x3F8);
                         else break;
@@ -66,31 +64,30 @@ void syscall_handler(struct regs* r){
             }
             break;
         }
-        case 2: // Linux open
-        case SYS_OPEN: {
+        case 2: { // Linux open
             const char* path = (const char*)arg1;
             int flags = (int)arg2;
             ret = vfs_open(path, flags);
             break;
         }
-        case 3: // Linux close
-        case SYS_CLOSE: {
+        case 3: { // Linux close
             int fd = (int)arg1;
             ret = vfs_close(fd);
             break;
         }
-        case 39: // Linux getpid
-        case SYS_GETPID:
+        case 39: { // Linux getpid
             ret = current ? (long)current->pid : -1;
             break;
-        case SYS_YIELD:
+        }
+        case 1000: { // yield
             schedule();
             ret = 0;
             break;
+        }
         case 60: // Linux exit
-        case SYS_EXIT: {
+        case 231: { // exit_group
             if(current){
-                current->state = 0; // TASK_UNUSED
+                current->state = 0;
                 schedule();
             }
             ret = 0;
@@ -166,8 +163,35 @@ void syscall_handler(struct regs* r){
         }
         case 13: // rt_sigaction
         case 14: // rt_sigprocmask
+        case 131: // sigaltstack
+        case 102: // getuid
+        case 104: // getgid
+        case 107: // geteuid
+        case 108: // getegid
+        case 186: // gettid
+        case 302: // prlimit64
             ret=0;
             break;
+        case 160: { // uname
+            struct utsname {
+                char sysname[65];
+                char nodename[65];
+                char release[65];
+                char version[65];
+                char machine[65];
+                char domainname[65];
+            } *u = (void*)arg1;
+            if(u){
+                const char* s = "StrixOS"; for(int i=0;s[i];i++) u->sysname[i]=s[i]; u->sysname[7]=0;
+                const char* n = "strix"; for(int i=0;n[i];i++) u->nodename[i]=n[i]; u->nodename[5]=0;
+                const char* r = "1.0"; for(int i=0;r[i];i++) u->release[i]=r[i]; u->release[3]=0;
+                const char* v = "StrixOS 1.0"; for(int i=0;v[i];i++) u->version[i]=v[i]; u->version[11]=0;
+                const char* m = "x86_64"; for(int i=0;m[i];i++) u->machine[i]=m[i]; u->machine[6]=0;
+                const char* d = "local"; for(int i=0;d[i];i++) u->domainname[i]=d[i]; u->domainname[5]=0;
+            }
+            ret=0;
+            break;
+        }
         case 72: { // fcntl
             ret=0;
             break;
@@ -212,10 +236,7 @@ void syscall_handler(struct regs* r){
         case 334: // rseq
             ret=0;
             break;
-        case 231: // exit_group
-            if(current){ current->state=0; schedule(); }
-            ret=0;
-            break;
+
         case 257: { // openat
             const char* path=(const char*)arg2;
             int flags=(int)arg3;
@@ -295,7 +316,7 @@ void syscall_handler(struct regs* r){
             break;
         }
         case 12: // Linux brk
-        case SYS_BRK: {
+        {
             static uint64_t cur_brk=0x600000;
             if(arg1==0){
                 ret = (long)cur_brk;
