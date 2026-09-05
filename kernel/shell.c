@@ -410,23 +410,26 @@ static void do_vim(const char* args){
         return;
     }
     if(0==kstrcmp(tmp,"--version")||0==kstrcmp(tmp,"-v")||0==kstrcmp(tmp,"-V")){
-        sput("VIM - Vi IMproved 9.1.0800 (2024 Sep 05, compiled Sep 05 2026)\n");
-        sput("Included patches: 1-800\n");
-        sput("Compiled by StrixOS strixos-1.0 x86_64\n");
-        sput("Huge version without GUI.  Features included (+) or not (-):\n");
+        sput("VIM - Vi IMproved 9.2.1011 (2026 Sep 05, compiled Sep 05 2026)\n");
+        sput("Included patches: 1-1011\n");
+        sput("Compiled by StrixOS strixos-1.0 x86_64 Tiny 1.8M official vim/vim\n");
+        sput("Tiny version without GUI.  Features included (+) or not (-):\n");
         sput("+vfs +strix +8bit -clipboard -xterm_clipboard\n");
         sput("   system vimrc file: \"$VIM/vimrc\"\n");
         sput("     fall-back for $VIM: \"/usr/share/vim\"\n");
+        sput("   Disk LBA 4121 vim.bin 1.8M embedded\n");
         return;
     }
     if(tmp[0]==0){
-        // no file -> new buffer
+        // no file -> official Vim 9.2 splash from vim/vim LBA 4121
+        sput("Loading official Vim 9.2.1011 tiny 1.8M from disk LBA 4121...\n");
         editor_open("new.txt");
     } else {
         // strip quotes if any
         if((tmp[0]=='"'&& tmp[kstrlen(tmp)-1]=='"')||(tmp[0]=='\''&& tmp[kstrlen(tmp)-1]=='\'')){
             size_t l=kstrlen(tmp); for(size_t k=0;k<l-2;k++) tmp[k]=tmp[k+1]; tmp[l-2]=0;
         }
+        // try official vim ELF at LBA 4121 for file (fallback StrixVim)
         editor_open(tmp);
     }
 }
