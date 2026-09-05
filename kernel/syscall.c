@@ -151,6 +151,13 @@ void syscall_handler(struct regs* r){
         case 158: { // arch_prctl
             int code=(int)arg1;
             void *addr=(void*)arg2;
+            // log
+            vga_puts("[SYS] arch_prctl "); char hex[]="0123456789ABCDEF"; for(int i=28;i>=0;i-=4){ char c[2]={hex[((uint64_t)code>>i)&0xF],0}; vga_puts(c);} vga_puts(" "); for(int i=60;i>=0;i-=4){ char c[2]={hex[((uint64_t)addr>>i)&0xF],0}; vga_puts(c);} vga_puts("\n");
+            for(const char *a="[SYS] arch_prctl ";*a;a++) outb(0x3F8,*a);
+            for(int i=28;i>=0;i-=4) outb(0x3F8,hex[((uint64_t)code>>i)&0xF]);
+            outb(0x3F8,' ');
+            for(int i=60;i>=0;i-=4) outb(0x3F8,hex[((uint64_t)addr>>i)&0xF]);
+            outb(0x3F8,'\n');
             if(code==0x1002){ // ARCH_SET_FS
                 uint64_t base=(uint64_t)addr;
                 // wrmsr 0xC0000100
