@@ -99,7 +99,6 @@ void syscall_handler(struct regs* r){
         case 16: { // Linux ioctl - termios for nano
             int fd=(int)arg1; unsigned long req=(unsigned long)arg2; void *argp=(void*)arg3; (void)fd;
             if(req==0x5401){ // TCGETS
-                // fill termios with zeros
                 if(argp) for(int i=0;i<64;i++) ((char*)argp)[i]=0;
                 ret=0;
             } else if(req==0x5402){ // TCSETS
@@ -107,30 +106,50 @@ void syscall_handler(struct regs* r){
             } else if(req==0x5413){ // TIOCGWINSZ
                 if(argp){ struct { unsigned short ws_row,ws_col,ws_xpixel,ws_ypixel; } *w=argp; w->ws_row=25; w->ws_col=80; w->ws_xpixel=640; w->ws_ypixel=400; }
                 ret=0;
-            } else if(req==0x541B){ // FIONREAD?
+            } else if(req==0x541B){
                 ret=0;
             } else {
-                ret=0;
+                ret=-1;
             }
             break;
         }
         case 9: { // Linux mmap
-            // arg1 addr, arg2 len, arg3 prot, arg4 flags from r10, arg5 fd from r8, arg6 offset from r9 - but we only have 3 args in int80, so use brk-like
-            // Simplify: return heap alloc
-            // Use kmalloc for len
             extern void* kmalloc(size_t);
-            void* ptr=kmalloc(arg2);
-            ret=ptr? (long)ptr : -1;
+            void* ptr=kmalloc(arg2 ? arg2 : 4096);
+            if(arg1!=0 && ptr){
+                // if MAP_FIXED, copy to requested addr if different
+                if((uint64_t)ptr != arg1){
+                    for(size_t i=0;i<arg2 && i<4096;i++) ((char*)arg1)[i]=0;
+                    ret=(long)arg1;
+                } else ret=(long)ptr;
+            } else ret=ptr? (long)ptr : -1;
             break;
         }
         case 11: { // Linux munmap
             ret=0;
             break;
         }
+        case 4: // stat
         case 5: { // Linux fstat
-            // arg1 fd, arg2 statbuf
             if(arg2) for(int i=0;i<144;i++) ((char*)arg2)[i]=0;
-            ret=0;
+            // for stat, return -1 ENOENT to force fallback, but also zero buf
+            if(num==4){
+                // check path for terminfo: if contains "terminfo", return 0 to pretend exists
+                const char *p=(const char*)arg1;
+                if(p && p[0]){
+                    // look for "terminfo" substring
+                    int has=0; for(const char *s=p; *s; s++) if(s[0]=='t' && s[1]=='e' && s[2]=='r' && s[3]=='m') has=1;
+                    if(has) ret=0; else ret=-2;
+                } else ret=-2;
+            } else ret=0;
+            break;
+        }
+        case 21: { // access
+            const char *p=(const char*)arg1;
+            if(p && p[0]){
+                int has=0; for(const char *s=p; *s; s++) if(s[0]=='t' && s[1]=='e' && s[2]=='r' && s[3]=='m') has=1;
+                ret = has ? 0 : -2;
+            } else ret=-2;
             break;
         }
         case 8: { // Linux lseek
@@ -138,8 +157,6 @@ void syscall_handler(struct regs* r){
             break;
         }
         case 7: { // Linux poll
-            // arg1 fds, arg2 nfds, arg3 timeout
-            // Simulate input ready
             ret=1;
             break;
         }
@@ -151,9 +168,10 @@ void syscall_handler(struct regs* r){
         case 14: // rt_sigprocmask
             ret=0;
             break;
-        case 72: // fcntl
+        case 72: { // fcntl
             ret=0;
             break;
+        }
         case 158: { // arch_prctl
             int code=(int)arg1;
             void *addr=(void*)arg2;
@@ -199,13 +217,10 @@ void syscall_handler(struct regs* r){
             ret=0;
             break;
         case 257: { // openat
-            // arg1 dirfd, arg2 path, arg3 flags
             const char* path=(const char*)arg2;
             int flags=(int)arg3;
-            // ignore dirfd, handle absolute or relative
             if(path) ret=vfs_open(path, flags);
             else ret=-1;
-            // if vfs_open fails try without leading /
             if(ret<0 && path && path[0]=='/') ret=vfs_open(path+1, flags);
             break;
         }
@@ -254,6 +269,8 @@ void syscall_handler(struct regs* r){
             break;
         }
         case 10: // mprotect
+            ret=0;
+            break;
         case 28: // madvise
             ret=0;
             break;
@@ -279,13 +296,16 @@ void syscall_handler(struct regs* r){
         }
         case 12: // Linux brk
         case SYS_BRK: {
-            // arg1 = new brk, if 0 return current brk
-            // For now just use kmalloc break simulation: return heap end
-            // Simplify: if arg1==0 return current heap top, else try to extend
+            static uint64_t cur_brk=0x600000;
             if(arg1==0){
-                ret = (long)0x600000; // dummy brk
+                ret = (long)cur_brk;
             } else {
-                ret = arg1;
+                if(arg1 > cur_brk && arg1 < 0x800000){
+                    cur_brk = arg1;
+                } else if(arg1 < cur_brk){
+                    cur_brk = arg1;
+                }
+                ret = cur_brk;
             }
             break;
         }
