@@ -28,12 +28,13 @@ void editor_open(const char* path){
             char *arg0=(char*)kmalloc(5); arg0[0]='n'; arg0[1]='a'; arg0[2]='n'; arg0[3]='o'; arg0[4]=0;
             __asm__ volatile(
                 "mov $0x7FF00, %%rsp\n"
-                "push $0\n"
-                "push $0\n"
-                "push %0\n"
+                "push $0\n" // envp
+                "push $0\n" // argv[1]
+                "push %0\n" // argv[0]
                 "mov %%rsp, %%rsi\n"
-                "push $1\n"
-                "call *%1\n"
+                "push $1\n" // argc
+                "mov %%rsp, %%rsp\n" // keep rsp at argc
+                "jmp *%1\n"
                 :: "r"(arg0), "r"(entry) : "memory"
             );
             const char *msg2="[ELF] nano _start returned\n";
