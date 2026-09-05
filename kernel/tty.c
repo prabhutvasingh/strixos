@@ -35,11 +35,10 @@ static __attribute__((unused)) int serial_ready(void){ return inb(0x3F8+5)&1; }
 static __attribute__((unused)) char serial_getc(void){ while(!serial_ready()); return inb(0x3F8); }
 
 static int is_admin_user(const char* u){
-    // avi is admin
     if(!u) return 0;
-    const char* a="avi";
-    int i=0; while(a[i]&&u[i]&&a[i]==u[i]) i++;
-    return a[i]==0 && u[i]==0;
+    // avi and root are admin
+    const char* a="avi"; int i=0; while(a[i]&&u[i]&&a[i]==u[i]) i++; if(a[i]==0 && u[i]==0) return 1;
+    const char* r="root"; i=0; while(r[i]&&u[i]&&r[i]==u[i]) i++; return r[i]==0 && u[i]==0;
 }
 int tty_is_admin(void){ return is_admin_user(tty_user[current_tty]); }
 void tty_login(int tty_id){
@@ -105,13 +104,21 @@ void tty_login(int tty_id){
             sys_write(1,"Login failed - empty user\n",26);
             continue;
         }
-        // only avi exists; others -> invalid credentials
-        if(!is_admin_user(p)){
-            sys_write(1,"Login incorrect: invalid credentials\n",37);
-            continue;
+        // only avi and root exist; others -> invalid
+        {
+            int is_avi=1; const char* a="avi"; int i=0; while(a[i]&&p[i]&&a[i]==p[i]) i++; if(a[i]!=0||p[i]!=0) is_avi=0;
+            int is_root=1; const char* r="root"; i=0; while(r[i]&&p[i]&&r[i]==p[i]) i++; if(r[i]!=0||p[i]!=0) is_root=0;
+            if(!is_avi && !is_root){
+                sys_write(1,"Login incorrect: invalid credentials\n",37);
+                continue;
+            }
         }
-        // password for avi is "power"
-        if(is_admin_user(p)){
+        // password: root = none, avi = power
+        {
+            int is_root=1; const char* r="root"; int i=0; while(r[i]&&p[i]&&r[i]==p[i]) i++; if(r[i]!=0||p[i]!=0) is_root=0;
+            if(is_root){
+                // no password for root
+            } else if(is_admin_user(p)){
             sys_write(1,"Password: ",10);
             int pp=0; pwd[0]=0;
             while(1){
@@ -124,6 +131,7 @@ void tty_login(int tty_id){
             // check power
             const char* pw="power"; int ok=1; int k=0; while(pw[k]&&pwd[k]&&pw[k]==pwd[k]) k++; if(pw[k]!=0||pwd[k]!=0) ok=0;
             if(!ok){ sys_write(1,"Login incorrect\n",16); continue; }
+            }
         }
         // store
         size_t i=0; while(p[i]&&i<31){tty_user[tty_id][i]=p[i];i++;} tty_user[tty_id][i]=0;
