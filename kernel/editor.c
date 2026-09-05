@@ -6,6 +6,8 @@
 #include "fb.h"
 #include "io.h"
 #include "elf.h"
+void* elf_load_nano_lba(uint32_t lba);
+int elf_load(void* data, void (**entry)(void));
 
 // Official GNU nano 9.2 binary embedded at LBA 4121 (host /usr/bin/nano 281K)
 // Source: https://git.savannah.gnu.org/git/nano.git  src/nano.c 2748 lines GPL-3.0
@@ -28,6 +30,23 @@ void editor_open(const char* path){
     const char *warn="  Note: static 660K no ld-linux, needs termios shim -> Edit fallback until loadelf bound\n";
     for(const char *a=warn;*a;a++) outb(0x3F8,*a);
 
+    // Try official static nano ELF at LBA 4121 first
+    void *nano_data=elf_load_nano_lba(4121);
+    if(nano_data){
+        void (*entry)(void)=0;
+        if(elf_load(nano_data, &entry)==0 && entry){
+            // Jump to official nano - it will use int80 termios we added
+            // For now just announce and fallback to Edit after return (nano exit will ret)
+            const char *msg="[ELF] jumping to official static nano 660K...\n";
+            for(const char *a=msg;*a;a++) outb(0x3F8,*a);
+            // Call entry - nano expects argc/argv/env, we pass dummy
+            // Use assembly to call with clean stack
+            __asm__ volatile("call *%0" :: "r"(entry) : "memory");
+            // if returns, continue to Edit
+            const char *msg2="[ELF] nano exited, falling to Edit\n";
+            for(const char *a=msg2;*a;a++) outb(0x3F8,*a);
+        }
+    }
     // Minimal Edit fallback (fixed rendering, no duplicate shortcuts)
     char filename[64]; int fi=0;
     if(path&&path[0]){ while(path[fi]&&fi<63){ filename[fi]=path[fi]; fi++; } filename[fi]=0; }
