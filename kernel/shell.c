@@ -607,8 +607,8 @@ static void dispatch(const char* line){
     else if(0==kstrcmp(p,"vim")) do_vim("");
     else if(0==kstrncmp(p,"vi ",3)) do_vim(p+3);
     else if(0==kstrcmp(p,"vi")) do_vim("");
-    else if(0==kstrncmp(p,"nano ",5)) { extern void editor_set_official(int); editor_set_official(0); do_vim(p+5); }
-    else if(0==kstrcmp(p,"nano")) { extern void editor_set_official(int); editor_set_official(0); do_vim(""); }
+    else if(0==kstrncmp(p,"nano ",5)) { extern void editor_set_official(int); editor_set_official(1); do_vim(p+5); }
+    else if(0==kstrcmp(p,"nano")) { extern void editor_set_official(int); editor_set_official(1); do_vim(""); }
     else if(0==kstrncmp(p,"edit ",5)) do_vim(p+5);
     else if(0==kstrcmp(p,"edit")) do_vim("");
     else if(0==kstrncmp(p,"editor ",7)) do_vim(p+7);
