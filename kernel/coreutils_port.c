@@ -438,9 +438,9 @@ int strix_stxver(int argc, char **argv){
         sput2("\x1b[38;2;255;255;0m       \"\"\"       \x1b[0m\n");
         sput2("\x1b[38;2;0;255;255m   StrixOS Moon  \x1b[0m\n");
     }
-    sput2("\x1b[1;34mOS:\x1b[0m StrixOS 0.11 x86_64\n");
+    sput2("\x1b[1;34mOS:\x1b[0m StrixOS 1.0 x86_64\n");
     sput2("\x1b[1;34mHost:\x1b[0m StrixVM QEMU 9.x\n");
-    sput2("\x1b[1;34mKernel:\x1b[0m MyOS Kernel v0.1 x86_64 Long Mode\n");
+    sput2("\x1b[1;34mKernel:\x1b[0m StrixOS kernel strixos-1.0 x86_64 Long Mode\n");
     // Uptime from timer_ticks (100 Hz)
     {
         unsigned long t=timer_ticks();

@@ -1,7 +1,7 @@
 #include "initrd.h"
 #include "heap.h"
 
-static uint8_t readme_data[] = "MyOS initrd README\nVersion 0.1 - Unix-like teaching kernel\nFiles: README, hello.txt, test.bin, file1.txt, file2.txt\n";
+static uint8_t readme_data[] = "StrixOS initrd README\nStrixOS kernel strixos-1.0 x86_64\nFiles: README, hello.txt, test.bin, file1.txt, file2.txt\n";
 static uint8_t hello_data[] = "Hello from initrd! This is a test file via VFS.\nSecond line here.\n";
 static uint8_t test_data[] = "0123456789ABCDEF - test.bin content for read testing.\n";
 static uint8_t file1_data[] = "content of file1\n";

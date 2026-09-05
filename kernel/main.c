@@ -299,7 +299,7 @@ void kmain(void) {
     vga_clear();
 
     vga_puts("========================================\n");
-    vga_puts("  StrixOS v0.99 MOON GREY 8x8\n");
+    vga_puts("  StrixOS kernel strixos-1.0 8x8\n");
     vga_puts("  x86_64 Long Mode Active\n");
     vga_puts("========================================\n");
     vga_puts("\n");
@@ -496,8 +496,8 @@ void kmain(void) {
     net_dump();
     vga_puts("\n[Kernel] Phase 10 complete - scalable\n");
     serial_puts("[Kernel] Phase 10 complete\n");
-    vga_puts("\nStrixOS v0.10 - All 10 phases complete!\n");
-    vga_puts("Scalable: add modules via module_register(), FAT/ELF/net ready\n");
+    vga_puts("\nStrixOS kernel strixos-1.0 - All 10 phases complete!\n");
+    vga_puts("StrixOS kernel strixos-1.0 scalable: module_register() FAT/ELF/net ready\n");
     serial_puts("StrixOS all phases done\n");
     while (1) { asm volatile("hlt"); }
 }

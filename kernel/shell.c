@@ -229,7 +229,7 @@ static void do_history(void){
         sput("  "); sput(history[i%HIST_SIZE]); sput("\n");
     }
 }
-static void do_uname(void){ sput("StrixOS 0.11 x86_64 StrixShell bash-like\n"); }
+static void do_uname(void){ sput("StrixOS 1.0 strixos-1.0 x86_64 StrixOS kernel\n"); }
 static void __attribute__((unused)) do_touch(const char* args){
     char tmp[128]; size_t i=0; while(args[i]&&i<127){tmp[i]=args[i];i++;} tmp[i]=0;
     trim(tmp);
