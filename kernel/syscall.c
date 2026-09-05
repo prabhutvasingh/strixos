@@ -103,7 +103,21 @@ void syscall_handler(struct regs* r){
         case 16: { // Linux ioctl - termios for nano
             int fd=(int)arg1; unsigned long req=(unsigned long)arg2; void *argp=(void*)arg3; (void)fd;
             if(req==0x5401){ // TCGETS
-                if(argp) for(int i=0;i<64;i++) ((char*)argp)[i]=0;
+                if(argp){
+                    uint32_t *t = (uint32_t*)argp;
+                    t[0] = 0x500;   // c_iflag
+                    t[1] = 0x5;     // c_oflag
+                    t[2] = 0x4bf;   // c_cflag
+                    t[3] = 0x507;   // c_lflag
+                    unsigned char *cc = (unsigned char*)(t + 4);
+                    cc[0] = 3;   // VINTR
+                    cc[1] = 28;  // VQUIT
+                    cc[2] = 127; // VERASE
+                    cc[3] = 21;  // VKILL
+                    cc[4] = 4;   // VEOF
+                    cc[5] = 0;   // VTIME
+                    cc[6] = 1;   // VMIN
+                }
                 ret=0;
             } else if(req==0x5402){ // TCSETS
                 ret=0;
