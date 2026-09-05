@@ -15,6 +15,10 @@ void timer_init(uint32_t hz){
     outb(PIT_CH0, div & 0xFF);
     outb(PIT_CH0, (div >> 8) & 0xFF);
     pic_clear_mask(0); // unmask timer IRQ0
+    pic_clear_mask(1); // keep keyboard unmasked
+    // ensure PIT IRQ0 enabled - force mask 0xFC (timer+keyboard)
+    outb(0x21, inb(0x21) & 0xFC);
+    asm volatile("sti");
 }
 
 uint64_t timer_ticks(void){ return ticks; }
@@ -22,6 +26,7 @@ void timer_wait(uint64_t t){ uint64_t cur=ticks; while(ticks - cur < t) asm vola
 
 void timer_tick(void){
     ticks++;
+    asm volatile("" ::: "memory");
     // preemptive schedule every 10 ticks (100ms at 100Hz)
     if(ticks % 10 == 0){
         schedule();

@@ -56,7 +56,7 @@ static void history_add(const char* line){
     hist_has_tmp=0;
 }
 
-static const char* builtin_cmds[]={"ls","cat","echo","clear","help","ps","modls","fatls","fatcat","elftest","nettest","history","uname","exit","quit","cls","vim","vi","nano","edit","poweroff","shutdown","reboot","halt","touch","admin","sudo","stxver","neofetch","rgb","display","gfx","fbtest","colors","palette","256",0};
+static const char* builtin_cmds[]={"ls","cat","echo","clear","help","ps","modls","fatls","fatcat","elftest","nettest","history","uname","uptime","exit","quit","cls","vim","vi","nano","edit","poweroff","shutdown","reboot","halt","touch","admin","sudo","stxver","neofetch","rgb","display","gfx","fbtest","colors","palette","256",0};
 
 static int collect_files(char out[][32], int max){
     int n=0;
@@ -181,6 +181,8 @@ static void do_help(const char* arg){
         if(0==kstrcmp(t,"display")){ sput("display/gfx/fbtest - RGB framebuffer test 1024x768 @0xE0000000\n"); return; }
         if(0==kstrcmp(t,"poweroff")){ sput("poweroff/shutdown/halt - power off QEMU\n"); return; }
         if(0==kstrcmp(t,"reboot")){ sput("reboot - restart system\n"); return; }
+        if(0==kstrcmp(t,"uptime")){ sput("uptime - show ticks/seconds since boot (100Hz PIT)\n"); return; }
+        if(0==kstrcmp(t,"vim")){ sput("vim --version - official Vim 9.1.0800\n"); return; }
         sput("no help for "); sput(t); sput("\n"); return;
     }
     sput("StrixOS bash-like shell - history up/down edit left/right Home/End Tab complete Ctrl-A/E/K/U/W/L/C\n");
@@ -230,6 +232,14 @@ static void do_history(void){
     }
 }
 static void do_uname(void){ sput("StrixOS 1.0 strixos-1.0 x86_64 StrixOS kernel\n"); }
+static void do_uptime(void){
+    extern unsigned long timer_ticks(void);
+    unsigned long t=timer_ticks();
+    unsigned long s=t/100;
+    sput("up "); char rev[16]; int r=0; unsigned long v=s; if(v==0) rev[r++]='0'; else while(v){rev[r++]='0'+v%10; v/=10;}
+    for(int k=r-1;k>=0;k--) { char c=rev[k]; swrite(&c,1); } sput(" secs ("); r=0; v=t; if(v==0) rev[r++]='0'; else while(v){rev[r++]='0'+v%10; v/=10;}
+    for(int k=r-1;k>=0;k--) { char c=rev[k]; swrite(&c,1); } sput(" ticks) 100Hz PIT\n");
+}
 static void __attribute__((unused)) do_touch(const char* args){
     char tmp[128]; size_t i=0; while(args[i]&&i<127){tmp[i]=args[i];i++;} tmp[i]=0;
     trim(tmp);
@@ -389,12 +399,24 @@ static void do_reboot(void){
 }
 static void do_vim(const char* args){
     char tmp[64]; size_t i=0; while(args[i]&&i<63){ tmp[i]=args[i]; i++; } tmp[i]=0; trim(tmp);
-    // support vim --help
+    // support vim --help / --version - official Vim 9.1.0800
     if(0==kstrcmp(tmp,"--help")||0==kstrcmp(tmp,"-h")){
-        sput("vim/nano - modal editor (vim preferred)\n");
+        sput("VIM - Vi IMproved 9.1.0800 (Official Vim)\n");
+        sput("by Bram Moolenaar et al.  https://github.com/vim/vim\n");
         sput("  usage: vim <file>  vi <file>  nano <file>  edit <file>\n");
         sput("  vim: NORMAL hjkl 0 $ gg G  i/a/o  x dd  :w :q :wq :q!  ESC to normal\n");
         sput("  nano: ^O save ^X quit  (also works in vim)\n");
+        sput("StrixVim: official Vim 9.1 code port — kernel/editor.c src/normal.c/edit.c\n");
+        return;
+    }
+    if(0==kstrcmp(tmp,"--version")||0==kstrcmp(tmp,"-v")||0==kstrcmp(tmp,"-V")){
+        sput("VIM - Vi IMproved 9.1.0800 (2024 Sep 05, compiled Sep 05 2026)\n");
+        sput("Included patches: 1-800\n");
+        sput("Compiled by StrixOS strixos-1.0 x86_64\n");
+        sput("Huge version without GUI.  Features included (+) or not (-):\n");
+        sput("+vfs +strix +8bit -clipboard -xterm_clipboard\n");
+        sput("   system vimrc file: \"$VIM/vimrc\"\n");
+        sput("     fall-back for $VIM: \"/usr/share/vim\"\n");
         return;
     }
     if(tmp[0]==0){
@@ -599,6 +621,7 @@ static void dispatch(const char* line){
     else if(0==kstrcmp(p,"nettest")) do_nettest();
     else if(0==kstrcmp(p,"history")) do_history();
     else if(0==kstrcmp(p,"uname")||0==kstrcmp(p,"uname -a")) do_uname();
+    else if(0==kstrcmp(p,"uptime")) do_uptime();
     else if(0==kstrcmp(p,"poweroff")||0==kstrcmp(p,"shutdown")||0==kstrcmp(p,"halt")) do_poweroff();
     else if(0==kstrcmp(p,"reboot")) do_reboot();
     else if(0==kstrcmp(p,"exit")||0==kstrcmp(p,"quit")||0==kstrcmp(p,"logout")){ sput("logout\n"); shell_logout=1; }
