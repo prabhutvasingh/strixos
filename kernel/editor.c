@@ -43,8 +43,12 @@ void editor_open(const char* path){
             // Use assembly to call with clean stack
             // Setup user stack for musl _start: argc=1, argv=["nano",0], envp=[0]
             // Call main directly at 0x4010A0 instead of _start to bypass TLS arg parsing that GP faults
-            // Setup argv on heap
+            // Setup TLS for musl main (FS base) - fixes GP 0x45F994 fs:0
             extern void* kmalloc(size_t);
+            void *tls=kmalloc(8192);
+            for(int i=0;i<8192;i++) ((char*)tls)[i]=0;
+            uint64_t base=(uint64_t)tls;
+            __asm__ volatile("wrmsr" :: "c"(0xC0000100), "a"((uint32_t)base), "d"((uint32_t)(base>>32)) : "memory");
             char *arg0=(char*)kmalloc(5); arg0[0]='n'; arg0[1]='a'; arg0[2]='n'; arg0[3]='o'; arg0[4]=0;
             char **argv=(char**)kmalloc(16); argv[0]=arg0; argv[1]=0;
             // Call main(1, argv)
