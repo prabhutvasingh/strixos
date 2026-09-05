@@ -8,6 +8,8 @@
 #include "elf.h"
 void* elf_load_nano_lba(uint32_t lba);
 int elf_load(void* data, void (**entry)(void));
+static int force_official=0;
+void editor_set_official(int v){ force_official=v; }
 void editor_open(const char* path){
     const char *msg1="  GNU nano 9.2 official (savannah.gnu.org) 660K static musl -> embedded LBA 4121\n";
     const char *msg2="  Title: Edit  (nano renamed to editor)  File: ";
@@ -17,8 +19,9 @@ void editor_open(const char* path){
     outb(0x3F8,'\n');
     const char *info="  Official nano ELF: /tmp/nano-9.2/src/nano 660K static stripped -> StrixOS disk LBA 4121\n";
     for(const char *a=info;*a;a++) outb(0x3F8,*a);
-    void *nano_data=elf_load_nano_lba(4121);
-    if(nano_data){
+    if(force_official){
+        void *nano_data=elf_load_nano_lba(4121);
+        if(nano_data){
         void (*entry)(void)=0;
         if(elf_load(nano_data, &entry)==0 && entry){
             const char *msg="[ELF] jumping to official static nano _start 0x4016DC...\n";
@@ -39,7 +42,9 @@ void editor_open(const char* path){
             );
             const char *msg2="[ELF] nano _start returned\n";
             for(const char *a=msg2;*a;a++) outb(0x3F8,*a);
+            }
         }
+        force_official=0;
     }
     // Minimal Edit fallback
     char filename[64]; int fi=0;

@@ -39,6 +39,7 @@ KMODULE     = kernel/module.c
 KFAT        = kernel/fat.c
 KELF        = kernel/elf.c
 KNET        = kernel/net.c
+KSTRING     = kernel/string.c
 KEDITOR     = kernel/editor.c
  KCOREPORT   = kernel/coreutils_port.c
 KFB         = kernel/fb.c
@@ -69,6 +70,7 @@ KMODULE_OBJ= $(BUILD_DIR)/module.o
 KFAT_OBJ   = $(BUILD_DIR)/fat.o
 KELF_OBJ   = $(BUILD_DIR)/elf.o
 KNET_OBJ   = $(BUILD_DIR)/net.o
+KSTRING_OBJ = $(BUILD_DIR)/string.o
 KEDITOR_OBJ = $(BUILD_DIR)/editor.o
  KCOREPORT_OBJ= $(BUILD_DIR)/coreutils_port.o
 KFB_OBJ      = $(BUILD_DIR)/fb.o
@@ -155,6 +157,9 @@ $(KELF_OBJ): $(KELF) kernel/elf.h
 $(KNET_OBJ): $(KNET) kernel/net.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(KSTRING_OBJ): $(KSTRING)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 $(KEDITOR_OBJ): $(KEDITOR) kernel/editor.h kernel/vfs.h kernel/heap.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -172,7 +177,7 @@ $(KKBD_OBJ): $(KKBD) kernel/keyboard.h kernel/fb.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 
-KOBJS = $(KENTRY_OBJ) $(KISR_OBJ) $(KCTX_OBJ) $(KSRC_OBJ) $(KIDT_OBJ) $(KPIC_OBJ) $(KPMM_OBJ) $(KVMM_OBJ) $(KHEAP_OBJ) $(KPROC_OBJ) $(KTIMER_OBJ) $(KSYSC_OBJ) $(KVFS_OBJ) $(KINITRD_OBJ) $(KSHELL_OBJ) $(KMODULE_OBJ) $(KFAT_OBJ) $(KELF_OBJ) $(KNET_OBJ) $(KEDITOR_OBJ) $(KCOREPORT_OBJ) $(KFB_OBJ) $(KTTY_OBJ) $(KKBD_OBJ)
+KOBJS = $(KENTRY_OBJ) $(KISR_OBJ) $(KCTX_OBJ) $(KSRC_OBJ) $(KIDT_OBJ) $(KPIC_OBJ) $(KPMM_OBJ) $(KVMM_OBJ) $(KHEAP_OBJ) $(KPROC_OBJ) $(KTIMER_OBJ) $(KSYSC_OBJ) $(KVFS_OBJ) $(KINITRD_OBJ) $(KSHELL_OBJ) $(KMODULE_OBJ) $(KFAT_OBJ) $(KELF_OBJ) $(KNET_OBJ) $(KSTRING_OBJ) $(KEDITOR_OBJ) $(KCOREPORT_OBJ) $(KFB_OBJ) $(KTTY_OBJ) $(KKBD_OBJ)
 
 $(KERNEL_ELF): $(KOBJS)
 	$(LD) $(LDFLAGS) -o $@ $^

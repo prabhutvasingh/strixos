@@ -56,7 +56,7 @@ static void history_add(const char* line){
     hist_has_tmp=0;
 }
 
-static const char* builtin_cmds[]={"ls","cat","echo","clear","help","ps","modls","fatls","fatcat","elftest","nettest","history","uname","uptime","exit","quit","cls","vim","vi","nano","edit","editor","poweroff","shutdown","reboot","halt","touch","admin","sudo","stxver","neofetch","rgb","display","gfx","fbtest","colors","palette","256",0};
+static const char* builtin_cmds[]={"ls","cat","echo","clear","help","ps","modls","fatls","fatcat","elftest","nettest","history","uname","uptime","exit","quit","cls","vim","vi","nano","edit","editor","nano-official","loadelf","poweroff","shutdown","reboot","halt","touch","admin","sudo","stxver","neofetch","rgb","display","gfx","fbtest","colors","palette","256",0};
 
 static int collect_files(char out[][32], int max){
     int n=0;
@@ -612,6 +612,8 @@ static void dispatch(const char* line){
     else if(0==kstrcmp(p,"edit")) do_vim("");
     else if(0==kstrncmp(p,"editor ",7)) do_vim(p+7);
     else if(0==kstrcmp(p,"editor")) do_vim("");
+    else if(0==kstrncmp(p,"nano-official",13)) { extern void editor_set_official(int); editor_set_official(1); do_vim(p+13); }
+    else if(0==kstrncmp(p,"loadelf",7)) { extern void editor_set_official(int); editor_set_official(1); do_vim(p+7); }
     else if(0==kstrcmp(p,"clear")||0==kstrcmp(p,"cls")) do_clear();
     else if(0==kstrncmp(p,"help",4)){
         char* a=p+4; while(*a==' ') a++;
@@ -810,7 +812,7 @@ void shell_task(void){
             for(int i=0;i<plen;i++) pref[i]=line[wstart+i];
             pref[plen]=0;
             int first_sp=-1; for(int i=0;i<len;i++) if(line[i]==' '){first_sp=i; break;}
-            const char* cmds[]={"ls","cat","echo","clear","help","ps","modls","fatls","fatcat","elftest","nettest","history","uname","exit","quit","cls","vim","vi","nano","edit","editor","poweroff","shutdown","reboot","halt","touch","admin","sudo","stxver","neofetch",0};
+            const char* cmds[]={"ls","cat","echo","clear","help","ps","modls","fatls","fatcat","elftest","nettest","history","uname","exit","quit","cls","vim","vi","nano","edit","editor","nano-official","loadelf","poweroff","shutdown","reboot","halt","touch","admin","sudo","stxver","neofetch",0};
             char files[16][32]; int fcnt=collect_files(files,16);
             const char** clist = cmds;
             int use_files=0;
