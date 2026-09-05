@@ -148,9 +148,27 @@ void syscall_handler(struct regs* r){
         case 72: // fcntl
             ret=0;
             break;
-        case 158: // arch_prctl
-            ret=0;
+        case 158: { // arch_prctl
+            int code=(int)arg1;
+            void *addr=(void*)arg2;
+            if(code==0x1002){ // ARCH_SET_FS
+                uint64_t base=(uint64_t)addr;
+                // wrmsr 0xC0000100
+                uint32_t lo=base & 0xFFFFFFFF;
+                uint32_t hi=(base>>32) & 0xFFFFFFFF;
+                __asm__ volatile("wrmsr" :: "c"(0xC0000100), "a"(lo), "d"(hi) : "memory");
+                ret=0;
+            } else if(code==0x1003){ // ARCH_GET_FS
+                uint32_t lo,hi;
+                __asm__ volatile("rdmsr" : "=a"(lo), "=d"(hi) : "c"(0xC0000100) : "memory");
+                uint64_t base=((uint64_t)hi<<32)|lo;
+                if(arg2) *(uint64_t*)arg2=base;
+                ret=0;
+            } else {
+                ret=0;
+            }
             break;
+        }
         case 218: // set_tid_address
             ret=current?current->pid:1;
             break;
