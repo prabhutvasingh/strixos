@@ -29,13 +29,21 @@ start:
     call print_string
 
     ; ============================================================
-    ; Load Stage 2 from disk (sectors starting at LBA 1) to STAGE2_OFFSET
+    ; Load Stage 2 from disk (sectors 1-24) to STAGE2_OFFSET
     ; ============================================================
-    mov ah, 0x42                   ; BIOS LBA read function
+    mov bx, STAGE2_OFFSET          ; ES:BX = destination buffer
+    mov al, STAGE2_SECTORS         ; Number of sectors to read
+    mov ch, 0                      ; Cylinder 0
+    mov cl, 2                      ; Start from sector 2 (sector 1 = MBR)
+    mov dh, 0                      ; Head 0
     mov dl, [boot_drive]           ; Drive number
-    mov si, disk_packet            ; Pointer to Disk Address Packet
+    mov ah, 0x02                   ; BIOS function: read sectors
     int 0x13                       ; Call BIOS disk interrupt
     jc disk_error                  ; Jump if carry flag set (error)
+
+    ; Verify we loaded the right amount
+    cmp al, STAGE2_SECTORS
+    jne disk_error
 
     print_string_loaded:
     mov si, msg_stage2
