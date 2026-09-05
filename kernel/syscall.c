@@ -213,9 +213,44 @@ void syscall_handler(struct regs* r){
             ret=-1;
             break;
         }
-        case 19: // readv
+        case 19: { // readv
+            // arg1 fd, arg2 iov, arg3 iovcnt
+            // Simplify: if fd 0, do read for first iov
+            if(arg1==0 && arg2){
+                struct iovec { void *base; size_t len; } *iov=(void*)arg2;
+                // try to read into first iov
+                char *b=iov[0].base;
+                size_t len=iov[0].len;
+                if(b && len){
+                    // non-blocking check
+                    if(!keyboard_has_char() && !(inb(0x3F8+5)&1)){
+                        ret=-11; // EAGAIN
+                    } else {
+                        char c=keyboard_getc();
+                        b[0]=c;
+                        ret=1;
+                    }
+                } else ret=0;
+            } else ret=-1;
+            break;
+        }
         case 20: { // writev
-            ret=-1;
+            int fd=(int)arg1;
+            struct iovec { void *base; size_t len; } *iov=(void*)arg2;
+            size_t cnt=(size_t)arg3;
+            long total=0;
+            for(size_t i=0;i<cnt;i++){
+                const char *b=iov[i].base;
+                size_t l=iov[i].len;
+                if(fd==1||fd==2){
+                    for(size_t k=0;k<l;k++){ vga_putchar(b[k]); while((inb(0x3F8+5)&0x20)==0); outb(0x3F8,b[k]); }
+                    total+=l;
+                } else {
+                    long r=vfs_write(fd,b,l);
+                    if(r>0) total+=r;
+                }
+            }
+            ret=total;
             break;
         }
         case 10: // mprotect
