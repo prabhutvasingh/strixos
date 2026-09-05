@@ -41,7 +41,18 @@ void editor_open(const char* path){
             for(const char *a=msg;*a;a++) outb(0x3F8,*a);
             // Call entry - nano expects argc/argv/env, we pass dummy
             // Use assembly to call with clean stack
-            __asm__ volatile("call *%0" :: "r"(entry) : "memory");
+            // Setup user stack for musl _start: argc=1, argv=["nano",0], envp=[0]
+            __asm__ volatile(
+                "mov $0x7FF00, %%rsp\n"
+                "push $0\n" // envp NULL
+                "push $0\n" // argv[1] NULL
+                "push %0\n" // argv[0] "nano"
+                "mov %%rsp, %%rsi\n" // argv
+                "push $1\n" // argc
+                "mov $1, %%rdi\n" // argc in rdi also for some
+                "call *%1\n"
+                :: "r"("nano"), "r"(entry) : "memory", "rdi", "rsi"
+            );
             // if returns, continue to Edit
             const char *msg2="[ELF] nano exited, falling to Edit\n";
             for(const char *a=msg2;*a;a++) outb(0x3F8,*a);

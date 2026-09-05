@@ -17,6 +17,16 @@ _start:
     ; Save bootloader-provided info (if any)
     ; RDI, RSI are available from bootloader
 
+    ; Enable SSE for user binaries (nano uses SSE)
+    mov rax, cr0
+    and ax, 0xFFFB
+    or ax, 0x22
+    mov cr0, rax
+    mov rax, cr4
+    or ax, 0x600
+    mov cr4, rax
+    fninit
+
     ; Clear BSS section
     extern __bss_start
     extern __bss_end
