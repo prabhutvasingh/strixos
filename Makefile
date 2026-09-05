@@ -183,6 +183,14 @@ $(KERNEL_BIN): $(KERNEL_ELF)
 	@echo "Kernel BIN: $$(wc -c < $@) bytes"
 
 # Disk: 4M for StrixOS + official Vim tiny 1.8M (sector 0 boot, 1-24 stage2, 25+ kernel 2M, 4121 vim)
+NANO_BIN = $(BUILD_DIR)/nano.bin
+NANO_BIN = $(BUILD_DIR)/nano.bin
+NANO_SRC = /tmp/nano_official_bin
+$(NANO_BIN): $(NANO_SRC)
+	@mkdir -p $(BUILD_DIR)
+	cp $(NANO_SRC) $@
+	@echo "Nano official: $$(wc -c < $@) bytes GNU nano 9.2"
+
 VIM_BIN = $(BUILD_DIR)/vim.bin
 $(VIM_BIN): /tmp/vim_tiny
 	@mkdir -p $(BUILD_DIR)
@@ -190,12 +198,13 @@ $(VIM_BIN): /tmp/vim_tiny
 	@echo "Vim Tiny: $$(wc -c < $@) bytes official 9.2.1011"
 
 # Disk: 4M for StrixOS + official Vim tiny 1.8M (sector 0 boot, 1-24 stage2, 25+ kernel 2M)
-$(BUILD_DIR)/os-image.bin: $(BOOT_BIN) $(STAGE2_BIN) $(KERNEL_BIN)
+$(BUILD_DIR)/os-image.bin: $(BOOT_BIN) $(STAGE2_BIN) $(KERNEL_BIN) $(NANO_BIN)
 	@echo "=== Building OS image ==="
 	dd if=/dev/zero of=$@ bs=1M count=4 2>/dev/null
 	dd if=$(BOOT_BIN) of=$@ bs=512 count=1 conv=notrunc 2>/dev/null
 	dd if=$(STAGE2_BIN) of=$@ bs=512 seek=1 conv=notrunc 2>/dev/null
 	dd if=$(KERNEL_BIN) of=$@ bs=512 seek=25 conv=notrunc 2>/dev/null
+	dd if=$(NANO_BIN) of=$@ bs=512 seek=4121 conv=notrunc 2>/dev/null
 	@echo "Boot  : $$(wc -c < $(BOOT_BIN)) bytes"
 	@echo "Stage2: $$(wc -c < $(STAGE2_BIN)) bytes (16:$$(wc -c < $(S16_BIN)) 32:$$(wc -c < $(S32_BIN)) 64:$$(wc -c < $(S64_BIN)))"
 	@echo "Kernel: $$(wc -c < $(KERNEL_BIN)) bytes"
