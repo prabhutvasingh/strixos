@@ -1,1 +1,6 @@
-official nano source cloned /tmp/nano_official 2748 lines src/nano.c GPL-3.0
+GNU nano 9.2 official source https://www.nano-editor.org/dist/v9/nano-9.2.tar.gz
+Built: /tmp/nano-9.2/src/nano 386K ELF64 pie dynamic --enable-tiny --disable-nls
+BuildID bac0720a237e685a367512cefd1b123c50266f61
+Embedded: build/nano.bin LBA 4121 394944 bytes on 4M os-image.bin
+Previous host pacman /usr/bin/nano 281K BuildID 0b34a1e9 replaced with tarball official build
+StrixOS bare-metal fallback Edit 76 lines kernel/editor.c still used (official requires Linux ld-linux/ncurses)
