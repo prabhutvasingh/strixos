@@ -4,15 +4,15 @@
 #include <stddef.h>
 #include "idt.h"
 
-#define SYS_EXIT    0
-#define SYS_WRITE   1
-#define SYS_READ    2
-#define SYS_OPEN    3
-#define SYS_CLOSE   4
-#define SYS_GETPID  5
-#define SYS_YIELD   6
-#define SYS_BRK     7
-#define SYS_FORK    8
+#define SYS_EXIT    100
+#define SYS_WRITE   101
+#define SYS_READ    102
+#define SYS_OPEN    103
+#define SYS_CLOSE   104
+#define SYS_GETPID  105
+#define SYS_YIELD   106
+#define SYS_BRK     107
+#define SYS_FORK    108
 
 // Called from ISR handler when int_no == 0x80
 void syscall_handler(struct regs* r);

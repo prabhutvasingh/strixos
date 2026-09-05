@@ -39,6 +39,7 @@ void syscall_handler(struct regs* r){
             }
             break;
         }
+        case 0: // Linux read
         case SYS_READ: {
             int fd = (int)arg1;
             void* buf = (void*)arg2;
@@ -65,17 +66,20 @@ void syscall_handler(struct regs* r){
             }
             break;
         }
+        case 2: // Linux open
         case SYS_OPEN: {
             const char* path = (const char*)arg1;
             int flags = (int)arg2;
             ret = vfs_open(path, flags);
             break;
         }
+        case 3: // Linux close
         case SYS_CLOSE: {
             int fd = (int)arg1;
             ret = vfs_close(fd);
             break;
         }
+        case 39: // Linux getpid
         case SYS_GETPID:
             ret = current ? (long)current->pid : -1;
             break;
@@ -83,6 +87,7 @@ void syscall_handler(struct regs* r){
             schedule();
             ret = 0;
             break;
+        case 60: // Linux exit
         case SYS_EXIT: {
             if(current){
                 current->state = 0; // TASK_UNUSED
@@ -91,6 +96,38 @@ void syscall_handler(struct regs* r){
             ret = 0;
             break;
         }
+        case 16: { // Linux ioctl - termios for nano
+            int fd=(int)arg1; unsigned long req=(unsigned long)arg2; void *argp=(void*)arg3; (void)fd;
+            if(req==0x5401){ // TCGETS
+                // fill termios with zeros
+                if(argp) for(int i=0;i<64;i++) ((char*)argp)[i]=0;
+                ret=0;
+            } else if(req==0x5402){ // TCSETS
+                ret=0;
+            } else if(req==0x5413){ // TIOCGWINSZ
+                if(argp){ struct { unsigned short ws_row,ws_col,ws_xpixel,ws_ypixel; } *w=argp; w->ws_row=25; w->ws_col=80; w->ws_xpixel=640; w->ws_ypixel=400; }
+                ret=0;
+            } else if(req==0x541B){ // FIONREAD?
+                ret=0;
+            } else {
+                ret=0;
+            }
+            break;
+        }
+        case 9: { // Linux mmap
+            // arg1 addr, arg2 len, arg3 prot, arg4 flags from r10, arg5 fd from r8, arg6 offset from r9 - but we only have 3 args in int80, so use brk-like
+            // Simplify: return heap alloc
+            // Use kmalloc for len
+            extern void* kmalloc(size_t);
+            void* ptr=kmalloc(arg2);
+            ret=ptr? (long)ptr : -1;
+            break;
+        }
+        case 11: { // Linux munmap
+            ret=0;
+            break;
+        }
+        case 12: // Linux brk
         case SYS_BRK: {
             // arg1 = new brk, if 0 return current brk
             // For now just use kmalloc break simulation: return heap end
