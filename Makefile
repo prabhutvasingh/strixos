@@ -79,9 +79,14 @@ KKBD_OBJ     = $(BUILD_DIR)/keyboard.o
 KERNEL_ELF = $(BUILD_DIR)/kernel.elf
 KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 
-.PHONY: all clean run run-gui debug
+ISO = $(BUILD_DIR)/strixos.iso
+ISO_DIR = $(BUILD_DIR)/iso
 
-all: $(BUILD_DIR)/os-image.bin
+.PHONY: all iso clean run run-gui run-iso debug
+
+all: $(BUILD_DIR)/os-image.bin $(ISO)
+
+iso: $(ISO)
 
 $(BOOT_BIN): $(BOOT_SRC)
 	@mkdir -p $(BUILD_DIR)
@@ -215,11 +220,29 @@ $(BUILD_DIR)/os-image.bin: $(BOOT_BIN) $(STAGE2_BIN) $(KERNEL_BIN) $(NANO_BIN)
 	@echo "Kernel: $$(wc -c < $(KERNEL_BIN)) bytes"
 	@echo "=== $@ built ==="
 
+$(ISO): $(BUILD_DIR)/os-image.bin
+	@echo "=== Building ISO (convenience) ==="
+	@mkdir -p $(ISO_DIR)
+	@cp $(BUILD_DIR)/os-image.bin $(ISO_DIR)/strixos.img
+	@cp $(KERNEL_BIN) $(ISO_DIR)/kernel.bin 2>/dev/null || true
+	@cp $(BOOT_BIN) $(ISO_DIR)/boot.bin 2>/dev/null || true
+	@echo "StrixOS 1.0 Beta - https://github.com/prabhutvasingh/strixos" > $(ISO_DIR)/README.txt
+	@echo "Boot raw: dd if=strixos.img of=/dev/sdX bs=512" >> $(ISO_DIR)/README.txt
+	@echo "QEMU raw: qemu-system-x86_64 -drive file=strixos.img,format=raw -m 256" >> $(ISO_DIR)/README.txt
+	@echo "QEMU iso: qemu-system-x86_64 -cdrom $(ISO) -m 256 -boot d" >> $(ISO_DIR)/README.txt
+	@xorriso -as mkisofs -o $@ -V STRIXOS_1_0 -J -R -iso-level 3 -v $(ISO_DIR) 2>&1 | tail -n 20
+	@echo "ISO  : $$(wc -c < $@) bytes  -> $@"
+	@echo "IMG  : $$(wc -c < $(BUILD_DIR)/os-image.bin) bytes (raw bootable)"
+	@echo "Both built for convenience: use .iso for drag/drop, .img/.bin for dd"
+
 run: $(BUILD_DIR)/os-image.bin
 	$(QEMU) -drive file=$<,format=raw,index=0,media=disk -m 256 -serial stdio -display none -vga std
 
 run-gui: $(BUILD_DIR)/os-image.bin
 	$(QEMU) -drive file=$<,format=raw,index=0,media=disk -m 256 -serial stdio -vga std -display gtk,zoom-to-fit=off
+
+run-iso: $(ISO)
+	$(QEMU) -cdrom $< -m 256 -serial stdio -display gtk,zoom-to-fit=off -boot d
 
 debug: $(BUILD_DIR)/os-image.bin
 	$(QEMU) -drive file=$<,format=raw,index=0,media=disk -m 256 -serial stdio -display none -vga std -S -gdb tcp::1234 &
