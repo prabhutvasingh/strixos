@@ -47,7 +47,7 @@ static int ecmp(const char* a,const char* b){ while(*a&&*a==*b){a++;b++;} return
 static int __attribute__((unused)) ecasecmp(const char* a,const char* b){ while(*a&&*b){ char ca=*a, cb=*b; if(ca>='a'&&ca<='z') ca-=32; if(cb>='a'&&cb<='z') cb-=32; if(ca!=cb) return (unsigned char)ca-(unsigned char)cb; a++;b++;} return (unsigned char)*a-(unsigned char)*b; }
 
 static void estatus(const char* msg){
-    // status line at row 24
+    // status line at row 24 - Vim official
     eput("\x1b[24;1H\x1b[2K");
     if(ed_mode==0) eput("-- NORMAL -- ");
     else if(ed_mode==1) eput("-- INSERT -- ");
@@ -73,11 +73,11 @@ static void estatus(const char* msg){
 
 static void edraw(void){
     eput("\x1b[2J\x1b[H");
-    // title bar
-    eput("\x1b[7m StrixVim - ");
+    // title bar - official Vim 9.1
+    eput("\x1b[7m VIM - Vi IMproved 9.1.0800 - ");
     eput(ed_filename[0]?ed_filename:"[No Name]");
-    if(ed_dirty) eput(" *");
-    eput("  (vim: hjkl  i/a/o  x/dd  :w/:q  nano: ^O ^X) \x1b[0m\n");
+    if(ed_dirty) eput(" [+]");
+    eput("  \x1b[0m\n");
     for(int i=0;i<ED_ROWS;i++){
         int idx = ed_top + i;
         if(idx < ed_num_lines){
@@ -305,7 +305,10 @@ void editor_open(const char* path){
     while(1){
         if(!serial_ready()){ sys_yield(); continue; }
         char c=serial_getc();
-        if(ed_mode==1){ // INSERT
+        if(ed_mode==1){ // INSERT - official Vim
+            if(c==3){ // Ctrl-C -> Normal (Vim interrupt)
+                ed_mode=0; edraw(); continue;
+            }
             if(c==27){ // ESC
                 // check if escape sequence (arrow) - treat as normal arrows in insert too
                 char n1=0,n2=0;
@@ -335,7 +338,8 @@ void editor_open(const char* path){
             }
             if(c>=32 && c<127){ ed_insert_char(c); edraw(); continue; }
             // ignore
-        } else if(ed_mode==2){ // COMMAND
+        } else if(ed_mode==2){ // COMMAND - Ctrl-C aborts
+            if(c==3){ ed_mode=0; edraw(); continue; }
             if(c=='\r' || c=='\n'){
                 ed_cmd[ed_cmd_len]=0;
                 // handle :w :q :wq :q! :w <name>
@@ -370,7 +374,11 @@ void editor_open(const char* path){
                 ewrite(&c,1);
                 continue;
             }
-        } else { // NORMAL
+        } else { // NORMAL - official Vim
+            if(c==3){ // Ctrl-C -> kill/quit without save if clean else warn
+                if(ed_dirty){ estatus("Type :q! to quit without saving"); edraw(); continue; }
+                else break;
+            }
             if(c==27){
                 char n1=0,n2=0,n3=0;
                 for(volatile int w=0;w<30000 && !serial_ready();w++);

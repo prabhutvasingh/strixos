@@ -777,8 +777,18 @@ void shell_task(void){
             int off=len-pos; for(int i=0;i<off;i++) sput("\x1b[D");
             last_tab=0; continue;
         }
-        if(c==3){
-            sput("^C\nStrixOS> "); len=0; pos=0;
+        if(c==3){ // Ctrl-C kills foreground process (SIGINT)
+            // kill any non-shell TASK_READY/RUNNING (taskA/B/sysA/sysB etc)
+            extern struct task tasks[];
+            int killed=0;
+            for(int i=0;i<16;i++) if(tasks[i].state==1 || tasks[i].state==2){
+                if(0==kstrcmp(tasks[i].name,"shell")||0==kstrcmp(tasks[i].name,"main")) continue;
+                tasks[i].state=0; killed++;
+            }
+            if(killed){
+                sput("^C killed "); char kb[8]; int kk=0, vv=killed; if(vv==0) kb[kk++]='0'; else{char rr[8];int rrpos=0; while(vv){rr[rrpos++]='0'+vv%10; vv/=10;} while(rrpos--) kb[kk++]=rr[rrpos];} kb[kk]=0; sput(kb); sput(" process(es)\n");
+            } else sput("^C\n");
+            rgb_print("StrixOS> ", 80,255,120); len=0; pos=0;
             hist_pos=hist_len;
             last_tab=0; continue;
         }
