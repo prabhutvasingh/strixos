@@ -29,21 +29,13 @@ start:
     call print_string
 
     ; ============================================================
-    ; Load Stage 2 from disk (sectors 1-32) to STAGE2_OFFSET
+    ; Load Stage 2 from disk (sectors starting at LBA 1) to STAGE2_OFFSET
     ; ============================================================
-    mov bx, STAGE2_OFFSET          ; ES:BX = destination buffer
-    mov al, STAGE2_SECTORS         ; Number of sectors to read
-    mov ch, 0                      ; Cylinder 0
-    mov cl, 2                      ; Start from sector 2 (1-indexed, sector 1 = MBR)
-    mov dh, 0                      ; Head 0
+    mov ah, 0x42                   ; BIOS LBA read function
     mov dl, [boot_drive]           ; Drive number
-    mov ah, 0x02                   ; BIOS function: read sectors
+    mov si, disk_packet            ; Pointer to Disk Address Packet
     int 0x13                       ; Call BIOS disk interrupt
     jc disk_error                  ; Jump if carry flag set (error)
-
-    ; Verify we loaded the right amount
-    cmp al, STAGE2_SECTORS
-    jne disk_error
 
     print_string_loaded:
     mov si, msg_stage2
@@ -86,6 +78,15 @@ boot_drive: db 0
 msg_boot:     db "[Stage1] Loading Stage 2...", 13, 10, 0
 msg_stage2:   db "[Stage2] Loaded, jumping...", 13, 10, 0
 msg_disk_err: db "[ERROR] Disk read failed!", 13, 10, 0
+
+align 4
+disk_packet:
+    db 0x10          ; Size of packet (16 bytes)
+    db 0             ; Reserved (0)
+    dw STAGE2_SECTORS; Number of sectors to read
+    dw STAGE2_OFFSET ; Destination offset (0x7E00)
+    dw 0x0000        ; Destination segment (0x0000)
+    dq 1             ; Starting LBA sector (1)
 
 ; =============================================================================
 ; Pad to 510 bytes and add boot signature
