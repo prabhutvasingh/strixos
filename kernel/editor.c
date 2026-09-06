@@ -4,112 +4,100 @@
 #include "keyboard.h"
 #include "tty.h"
 #include "fb.h"
-#include "io.h"
-#include "elf.h"
-extern void vga_puts(const char* s);
-extern void serial_puts(const char*);
-void* elf_load_nano_lba(uint32_t lba);
-int elf_load(void* data, void (**entry)(void));
+#include "syscall.h"
 
-int force_official=0;
-void editor_set_official(int v){ force_official=v; }
+int force_official = 0;
+void editor_set_official(int v){ (void)v; force_official = 0; }
+
+static void e_put(const char* s){ size_t l=0; while(s[l]) l++; if(l) sys_write(1,s,l); }
+static void e_ch(char c){ sys_write(1,&c,1); }
 
 void editor_open(const char* path){
-    if(force_official){
-        vga_puts("  Loading GNU nano 9.2 (official static ELF)...\n");
-        void *nano_data = elf_load_nano_lba(4121);
-        if(nano_data){
-            struct elf_hdr *h = (struct elf_hdr*)nano_data;
-            void (*entry)(void)=0;
-            if(elf_load(nano_data, &entry)==0 && entry){
-                vga_puts("  Jumping to nano _start...\n");
-                uint64_t *stack_buf = (uint64_t*)kmalloc(8192);
-                if(stack_buf) {
-                    uint64_t ph_addr = (uint64_t)nano_data + h->phoff;
-                    uint64_t *stack = stack_buf + 1024 - 16;
-                    serial_puts("[DEBUG] Jumping to nano _start\n");
-                    stack[0] = 1;              // argc = 1
-                    stack[1] = (uint64_t)"nano"; // argv[0]
-                    stack[2] = 0;              // argv[1] (NULL)
-                    stack[3] = 0;              // envp[0] (NULL)
-                    stack[4] = 3;  stack[5] = ph_addr;   // AT_PHDR
-                    stack[6] = 4;  stack[7] = 56;        // AT_PHENT
-                    stack[8] = 5;  stack[9] = h->phnum;  // AT_PHNUM
-                    stack[10] = 9; stack[11] = h->entry; // AT_ENTRY
-                    stack[12] = 0; stack[13] = 0;        // AT_NULL
-                    uint64_t stack_ptr = (uint64_t)&stack[0];
-                    uint64_t tcb_addr = (uint64_t)(stack_buf + 100);
-                    __asm__ volatile("wrmsr" :: "c"(0xC0000100), "a"((uint32_t)tcb_addr), "d"((uint32_t)(tcb_addr>>32)) : "memory");
-                    __asm__ volatile(
-                        "mov %0, %%rsp\n"
-                        "xor %%rax, %%rax\n"
-                        "xor %%rbx, %%rbx\n"
-                        "xor %%rcx, %%rcx\n"
-                        "xor %%rdx, %%rdx\n"
-                        "xor %%rsi, %%rsi\n"
-                        "xor %%rdi, %%rdi\n"
-                        "xor %%rbp, %%rbp\n"
-                        "xor %%r8, %%r8\n"
-                        "xor %%r9, %%r9\n"
-                        "xor %%r10, %%r10\n"
-                        "xor %%r11, %%r11\n"
-                        "xor %%r12, %%r12\n"
-                        "xor %%r13, %%r13\n"
-                        "xor %%r14, %%r14\n"
-                        "xor %%r15, %%r15\n"
-                        "jmp *%1\n"
-                        :: "r"(stack_ptr), "r"(entry) : "memory"
-                    );
-                }
-                kfree(nano_data);
-            }
-        }
-        force_official = 0;
+    force_official = 0;
+
+    char filename[64];
+    size_t fi = 0;
+    if(path && path[0]){
+        while(path[fi] && fi < 63){ filename[fi]=path[fi]; fi++; }
+        filename[fi]=0;
+        if(fi==0){ const char *d="new.txt"; for(int i=0;d[i];i++) filename[i]=d[i]; filename[7]=0; }
+        if(filename[0]=='/'){ size_t k=0; while(filename[k]){filename[k]=filename[k+1];k++;} }
+    } else {
+        const char *d="new.txt"; for(int i=0;d[i];i++) filename[i]=d[i]; filename[7]=0;
     }
 
-    // Native fallback
-    char filename[64]; int fi=0;
-    if(path&&path[0]){ while(path[fi]&&fi<63){ filename[fi]=path[fi]; fi++; } filename[fi]=0; }
-    else { const char *d="new.txt"; for(int i=0;d[i];i++) filename[i]=d[i]; filename[4]=0; }
-    
-    char *buf=(char*)kmalloc(8192); if(!buf) return;
+    char *buf = (char*)kmalloc(8192);
+    if(!buf) return;
     for(int i=0;i<8192;i++) buf[i]=0;
-    int fd=vfs_open(filename,0); int len=0;
-    if(fd>=0){ len=vfs_read(fd,buf,8191); if(len<0) len=0; vfs_close(fd); } buf[len]=0;
-    int cur=len, modified=0;
-    
-    volatile uint16_t *vga=(volatile uint16_t*)0xB8000;
-    for(int i=0;i<80*25;i++) vga[i]=(0x07<<8)|' ';
-    int running=1;
+    int len = 0;
+    int fd = vfs_open(filename, 0);
+    if(fd >= 0){ long r = vfs_read(fd, buf, 8191); if(r > 0) len = (int)r; vfs_close(fd); }
+    buf[len] = 0;
+    int cur = len, modified = 0, running = 1;
+
     while(running){
-        char title[80]; for(int i=0;i<80;i++) title[i]=' '; title[79]=0;
-        const char *left="  Edit"; for(int i=0;left[i];i++) title[2+i]=left[i];
-        int fnlen=0; while(filename[fnlen]&&fnlen<20) fnlen++;
-        int fpos=40 - fnlen/2; for(int i=0;i<fnlen;i++) title[fpos+i]=filename[i];
-        if(modified){ const char *mod="Modified"; for(int i=0;mod[i];i++) title[70+i]=mod[i]; }
-        for(int x=0;x<80;x++) vga[x]=(0x70<<8)|(uint8_t)title[x];
-        for(int x=0;x<80;x++) vga[1*80+x]=(0x07<<8)|'-';
-        for(int y=2;y<23;y++) for(int x=0;x<80;x++) vga[y*80+x]=(0x07<<8)|' ';
-        int y=2,x=0; for(int i=0;i<len && y<23;i++){ char c=buf[i]; if(c=='\n'){ y++; x=0; continue; } if(c=='\r') continue; if(c=='\t') c=' '; if(x>=80){ y++; x=0; if(y>=23) break; } vga[y*80+x]=(0x07<<8)|(uint8_t)c; x++; }
-        int cy=2,cx=0; for(int i=0;i<cur && cy<23;i++){ if(buf[i]=='\n'){ cy++; cx=0; } else { cx++; if(cx>=80){ cy++; cx=0; } } } if(cy>=23) cy=22; if(cx>=80) cx=79;
-        int pos=cy*80+cx; outb(0x3D4,0x0F); outb(0x3D5,pos & 0xFF); outb(0x3D4,0x0E); outb(0x3D5,(pos>>8)&0xFF);
-        const char *s1="^G Help      ^O WriteOut  ^W Where Is  ^K Cut       ^T Execute   ^C Location";
-        for(int x2=0;x2<80;x2++) vga[24*80+x2]=(0x07<<8)|' ';
-        for(int i=0;s1[i]&&i<80;i++) vga[24*80+i]=(0x07<<8)|(uint8_t)s1[i];
-        const char *s2="^X Exit      ^R ReadFile  ^\\ Replace   ^U Paste     ^J Justify   ^/ GoToLine";
-        for(int x2=0;x2<80;x2++) vga[23*80+x2]=(0x07<<8)|' ';
-        for(int i=0;s2[i]&&i<80;i++) vga[23*80+i]=(0x07<<8)|(uint8_t)s2[i];
-        char c=keyboard_getc(); if(c==0) continue;
-        if(c==24){ if(modified){ for(int x3=0;x3<80;x3++) vga[23*80+x3]=(0x70<<8)|' '; const char *q="Save modified buffer? (Y/N/^C) "; for(int i=0;q[i];i++) vga[23*80+i]=(0x70<<8)|(uint8_t)q[i]; char a=keyboard_getc(); if(a=='y'||a=='Y') goto do_save; else if(a=='n'||a=='N'){ running=0; break; } else { for(int x3=0;x3<80;x3++) vga[23*80+x3]=(0x07<<8)|' '; continue; } } else { running=0; break; } }
-        else if(c==15){ do_save: { int fd2=vfs_open(filename,0); if(fd2>=0){ vfs_write(fd2,buf,len); vfs_close(fd2); } modified=0; for(int x3=0;x3<80;x3++) vga[23*80+x3]=(0x70<<8)|' '; const char *w="Wrote file"; for(int i=0;w[i];i++) vga[23*80+i]=(0x70<<8)|(uint8_t)w[i]; } }
-        else if(c==11){ int ls=cur; while(ls>0&&buf[ls-1]!='\n') ls--; int le=cur; while(le<len&&buf[le]!='\n') le++; if(le<len) le++; int llen=le-ls; for(int i=ls;i+llen<len;i++) buf[i]=buf[i+llen]; len-=llen; if(cur>len) cur=len; modified=1; }
-        else if(c==8 || c==127){ if(cur>0){ for(int i=cur-1;i<len;i++) buf[i]=buf[i+1]; cur--; len--; modified=1; } }
-        else if(c=='\n' || c=='\r'){ if(len<8190){ for(int i=len;i>cur;i--) buf[i]=buf[i-1]; buf[cur]='\n'; cur++; len++; modified=1; } }
-        else if(c>=32 && c<127){ if(len<8190){ for(int i=len;i>cur;i--) buf[i]=buf[i-1]; buf[cur]=c; cur++; len++; modified=1; } }
+        // redraw via ANSI so it works on serial + framebuffer TTY
+        e_put("\x1b[2J\x1b[H");
+        e_put("Strix Write - ");
+        e_put(filename);
+        if(modified) e_put(" (Modified)");
+        e_put("  | ^O save  ^X exit  ^K cut line\n");
+        e_put("---------------------------------------------------------------\n");
+        // print buffer
+        if(len > 0) sys_write(1, buf, len);
+        e_put("\n---------------------------------------------------------------\n");
+        e_put("Type to write. Backspace deletes. Enter = new line. Arrows move.\n");
+
+        char c = keyboard_getc();
+        if(c == 0) continue;
+        if(c == 27){ // ESC sequence (arrows from serial/QEMU)
+            char n1 = keyboard_getc();
+            if(n1 == '['){
+                char n2 = keyboard_getc();
+                if(n2 == 'D' && cur > 0) cur--;         // left
+                else if(n2 == 'C' && cur < len) cur++;  // right
+            } else {
+                running = 0; // plain ESC exits
+            }
+            continue;
+        }
+        if(c == 24){ // ^X exit
+            if(modified){
+                e_put("Save before exit? (Y/N): ");
+                char a = keyboard_getc();
+                e_ch(a); e_put("\n");
+                if(a=='y'||a=='Y') goto do_save;
+                else if(a=='n'||a=='N'){ running=0; break; }
+                else continue;
+            } else { running=0; break; }
+        }
+        else if(c == 15){ // ^O save
+        do_save:
+            if(0==vfs_save(filename, buf, len)){ modified=0; e_put("Saved!\n"); }
+            else e_put("Save FAILED!\n");
+            // pause so user sees message
+            for(volatile int w=0; w<2000000; w++) asm volatile("pause");
+        }
+        else if(c == 11){ // ^K cut line
+            int ls=cur; while(ls>0&&buf[ls-1]!='\n') ls--;
+            int le=cur; while(le<len&&buf[le]!='\n') le++; if(le<len) le++;
+            int llen=le-ls;
+            for(int i=ls;i+llen<len;i++) buf[i]=buf[i+llen];
+            len-=llen; if(cur>len) cur=len; modified=1;
+        }
+        else if(c == 8 || c == 127){ // backspace
+            if(cur>0){ for(int i=cur-1;i<len;i++) buf[i]=buf[i+1]; cur--; len--; modified=1; }
+        }
+        else if(c == '\n' || c == '\r'){
+            if(len<8190){ for(int i=len;i>cur;i--) buf[i]=buf[i-1]; buf[cur]='\n'; cur++; len++; modified=1; }
+        }
+        else if(c >= 32 && c < 127){
+            if(len<8190){ for(int i=len;i>cur;i--) buf[i]=buf[i-1]; buf[cur]=c; cur++; len++; modified=1; }
+        }
     }
-    for(int i=0;i<80*25;i++) vga[i]=(0x07<<8)|' ';
-    tty_clear();
-    extern void kfree(void* ptr);
     kfree(buf);
+    tty_clear();
+    e_put("\x1b[2J\x1b[H");
 }
+
 void nano_open(const char* path){ editor_open(path); }
