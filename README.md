@@ -63,7 +63,7 @@ Built in `C` + `x86 Assembly` · Boots in `QEMU` + real hardware · `720p / 1080
 
 | | |
 |---|---|
-| 🧒 | **Built by a 12-year-old** — every line of bootloader + kernel written from zero |
+| 🧒 | **Second 12-year-old in the world to build a real OS from zero** — every line of bootloader + kernel written from scratch |
 | 🛠️ | **Custom everything** — bootloader, GDT, paging, IDT, heap, VFS, shell, editor |
 | 💛 | **Beginner friendly** — `list`, `read`, `say`, `make`, `write`, `goto`, `whereami`, `about` |
 | 🖥️ | **Boots for real** — QEMU + real hardware, VBE graphics + VGA fallback |
