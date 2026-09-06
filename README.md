@@ -21,7 +21,7 @@
 
 # **StrixOS** — `Version 1.0 Beta`
 
-### *Made from scratch by **Avi, age 12** — Custom Bootloader + Custom Strix Kernel*
+### *Second 12 year old in the world to make a custom kernel, first 12 year old in the world to make a 64 bit operating system**
 
 <p>
   <img src="https://img.shields.io/badge/Made_by-Avi_age_12-FF6B9D?style=for-the-badge&labelColor=0a0a0a" />
