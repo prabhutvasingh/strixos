@@ -6,98 +6,78 @@
 #include "fb.h"
 #include "io.h"
 #include "elf.h"
+extern void vga_puts(const char* s);
+extern void serial_puts(const char*);
 void* elf_load_nano_lba(uint32_t lba);
 int elf_load(void* data, void (**entry)(void));
+
 int force_official=0;
 void editor_set_official(int v){ force_official=v; }
+
 void editor_open(const char* path){
     if(force_official){
-        const char *msg1="  GNU nano 9.2 official (savannah.gnu.org) 660K static musl -> embedded LBA 4121\n";
-        const char *msg2="  Title: Edit  (nano renamed to editor)  File: ";
-        for(const char *a=msg1;*a;a++) outb(0x3F8,*a);
-        for(const char *a=msg2;*a;a++) outb(0x3F8,*a);
-        if(path) for(const char *a=path;*a;a++) outb(0x3F8,*a);
-        outb(0x3F8,'\n');
-        const char *info="  Official nano ELF: /tmp/nano-9.2/src/nano 660K static stripped -> StrixOS disk LBA 4121\n";
-        for(const char *a=info;*a;a++) outb(0x3F8,*a);
-    }
-    if(force_official){
-        void *nano_data=elf_load_nano_lba(4121);
+        vga_puts("  Loading GNU nano 9.2 (official static ELF)...\n");
+        void *nano_data = elf_load_nano_lba(4121);
         if(nano_data){
-            struct elf_hdr *h=nano_data;
+            struct elf_hdr *h = (struct elf_hdr*)nano_data;
             void (*entry)(void)=0;
             if(elf_load(nano_data, &entry)==0 && entry){
-                const char *msg="[ELF] jumping to official static nano _start...\n";
-                for(const char *a=msg;*a;a++) outb(0x3F8,*a);
-                extern void* kmalloc(size_t);
-                uint64_t *stack_buf = kmalloc(8192);
-                char *arg0 = (char*)kmalloc(8);
-                arg0[0]='n'; arg0[1]='a'; arg0[2]='n'; arg0[3]='o'; arg0[4]=0;
-
-                uint64_t ph_addr = (uint64_t)nano_data + h->phoff;
-                int idx = 0;
-                stack_buf[idx++] = 1; // argc = 1
-                stack_buf[idx++] = (uint64_t)arg0; // argv[0]
-                stack_buf[idx++] = 0; // argv[1] (NULL)
-                stack_buf[idx++] = 0; // envp[0] (NULL)
-
-                // auxv
-                stack_buf[idx++] = 16; stack_buf[idx++] = 0;     // AT_HWCAP
-                stack_buf[idx++] = 6;  stack_buf[idx++] = 4096;  // AT_PAGESZ
-                stack_buf[idx++] = 17; stack_buf[idx++] = 100;   // AT_CLKTCK
-                stack_buf[idx++] = 3;  stack_buf[idx++] = ph_addr; // AT_PHDR
-                stack_buf[idx++] = 4;  stack_buf[idx++] = 56;    // AT_PHENT
-                stack_buf[idx++] = 5;  stack_buf[idx++] = h->phnum; // AT_PHNUM
-                stack_buf[idx++] = 7;  stack_buf[idx++] = 0;     // AT_BASE
-                stack_buf[idx++] = 8;  stack_buf[idx++] = 0;     // AT_FLAGS
-                stack_buf[idx++] = 9;  stack_buf[idx++] = h->entry; // AT_ENTRY
-                stack_buf[idx++] = 11; stack_buf[idx++] = 0;     // AT_UID
-                stack_buf[idx++] = 12; stack_buf[idx++] = 0;     // AT_EUID
-                stack_buf[idx++] = 13; stack_buf[idx++] = 0;     // AT_GID
-                stack_buf[idx++] = 14; stack_buf[idx++] = 0;     // AT_EGID
-                stack_buf[idx++] = 23; stack_buf[idx++] = 0;     // AT_SECURE
-                stack_buf[idx++] = 25; stack_buf[idx++] = (uint64_t)(stack_buf + 500); // AT_RANDOM
-                stack_buf[idx++] = 0;  stack_buf[idx++] = 0;     // AT_NULL
-
-                // Set up %fs base (Thread Control Block for musl libc)
-                uint64_t tcb_addr = (uint64_t)(stack_buf + 100);
-                uint32_t tcb_lo = tcb_addr & 0xFFFFFFFF;
-                uint32_t tcb_hi = (tcb_addr >> 32) & 0xFFFFFFFF;
-                __asm__ volatile("wrmsr" :: "c"(0xC0000100), "a"(tcb_lo), "d"(tcb_hi) : "memory");
-
-                __asm__ volatile(
-                    "mov %0, %%rsp\n"
-                    "xor %%rax, %%rax\n"
-                    "xor %%rbx, %%rbx\n"
-                    "xor %%rcx, %%rcx\n"
-                    "xor %%rdx, %%rdx\n"
-                    "xor %%rsi, %%rsi\n"
-                    "xor %%rdi, %%rdi\n"
-                    "xor %%rbp, %%rbp\n"
-                    "xor %%r8, %%r8\n"
-                    "xor %%r9, %%r9\n"
-                    "xor %%r10, %%r10\n"
-                    "xor %%r11, %%r11\n"
-                    "xor %%r12, %%r12\n"
-                    "xor %%r13, %%r13\n"
-                    "xor %%r14, %%r14\n"
-                    "xor %%r15, %%r15\n"
-                    "jmp *%1\n"
-                    :: "r"(stack_buf), "r"(entry) : "memory"
-                );
+                vga_puts("  Jumping to nano _start...\n");
+                uint64_t *stack_buf = (uint64_t*)kmalloc(8192);
+                if(stack_buf) {
+                    uint64_t ph_addr = (uint64_t)nano_data + h->phoff;
+                    uint64_t *stack = stack_buf + 1024 - 16;
+                    serial_puts("[DEBUG] Jumping to nano _start\n");
+                    stack[0] = 1;              // argc = 1
+                    stack[1] = (uint64_t)"nano"; // argv[0]
+                    stack[2] = 0;              // argv[1] (NULL)
+                    stack[3] = 0;              // envp[0] (NULL)
+                    stack[4] = 3;  stack[5] = ph_addr;   // AT_PHDR
+                    stack[6] = 4;  stack[7] = 56;        // AT_PHENT
+                    stack[8] = 5;  stack[9] = h->phnum;  // AT_PHNUM
+                    stack[10] = 9; stack[11] = h->entry; // AT_ENTRY
+                    stack[12] = 0; stack[13] = 0;        // AT_NULL
+                    uint64_t stack_ptr = (uint64_t)&stack[0];
+                    uint64_t tcb_addr = (uint64_t)(stack_buf + 100);
+                    __asm__ volatile("wrmsr" :: "c"(0xC0000100), "a"((uint32_t)tcb_addr), "d"((uint32_t)(tcb_addr>>32)) : "memory");
+                    __asm__ volatile(
+                        "mov %0, %%rsp\n"
+                        "xor %%rax, %%rax\n"
+                        "xor %%rbx, %%rbx\n"
+                        "xor %%rcx, %%rcx\n"
+                        "xor %%rdx, %%rdx\n"
+                        "xor %%rsi, %%rsi\n"
+                        "xor %%rdi, %%rdi\n"
+                        "xor %%rbp, %%rbp\n"
+                        "xor %%r8, %%r8\n"
+                        "xor %%r9, %%r9\n"
+                        "xor %%r10, %%r10\n"
+                        "xor %%r11, %%r11\n"
+                        "xor %%r12, %%r12\n"
+                        "xor %%r13, %%r13\n"
+                        "xor %%r14, %%r14\n"
+                        "xor %%r15, %%r15\n"
+                        "jmp *%1\n"
+                        :: "r"(stack_ptr), "r"(entry) : "memory"
+                    );
+                }
+                kfree(nano_data);
             }
         }
-        force_official=0;
+        force_official = 0;
     }
-    // Minimal Edit fallback
+
+    // Native fallback
     char filename[64]; int fi=0;
     if(path&&path[0]){ while(path[fi]&&fi<63){ filename[fi]=path[fi]; fi++; } filename[fi]=0; }
     else { const char *d="new.txt"; for(int i=0;d[i];i++) filename[i]=d[i]; filename[4]=0; }
+    
     char *buf=(char*)kmalloc(8192); if(!buf) return;
     for(int i=0;i<8192;i++) buf[i]=0;
     int fd=vfs_open(filename,0); int len=0;
     if(fd>=0){ len=vfs_read(fd,buf,8191); if(len<0) len=0; vfs_close(fd); } buf[len]=0;
     int cur=len, modified=0;
+    
     volatile uint16_t *vga=(volatile uint16_t*)0xB8000;
     for(int i=0;i<80*25;i++) vga[i]=(0x07<<8)|' ';
     int running=1;
@@ -129,6 +109,7 @@ void editor_open(const char* path){
     }
     for(int i=0;i<80*25;i++) vga[i]=(0x07<<8)|' ';
     tty_clear();
+    extern void kfree(void* ptr);
     kfree(buf);
 }
 void nano_open(const char* path){ editor_open(path); }

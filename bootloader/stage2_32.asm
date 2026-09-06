@@ -46,12 +46,12 @@ stage2_32_entry:
     mov dword [0x2000 + 0*8], 0x3003
     mov dword [0x2000 + 510*8], 0x3003
 
-    ; Map 0-64MB identity via 2MB pages (32 entries)
+    ; Map 0-64MB identity via 2MB pages (32 entries) - with EXECUTE permission for ELF binaries
     mov ecx, 0
 .map_loop:
     mov eax, ecx
     shl eax, 21                 ; 2MB * ecx
-    or eax, 0x83                ; P | RW | PS
+    or eax, 0x87                ; P | RW | PS | U (user executable)
     mov dword [0x3000 + ecx*8], eax
     mov dword [0x3000 + ecx*8 +4], 0
     inc ecx

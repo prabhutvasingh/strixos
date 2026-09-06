@@ -185,9 +185,11 @@ static void do_help(const char* arg){
         if(0==kstrcmp(t,"vim")){ sput("vim --version - official Vim 9.1.0800\n"); return; }
         sput("no help for "); sput(t); sput("\n"); return;
     }
-    sput("StrixOS bash-like shell - history up/down edit left/right Home/End Tab complete Ctrl-A/E/K/U/W/L/C\n");
-    sput("Commands: ls, cat <file>, echo <txt>, clear/cls, help [cmd], ps, modls, fatls, fatcat, elftest, nettest, history, uname, vim/vi/nano/edit <file>, touch <file>, admin/sudo <cmd>, stxver/neofetch, rgb <r> <g> <b> [text], colors/palette/256 (8-bit 256-col), display/gfx/fbtest, poweroff/shutdown/halt, reboot, exit/quit\n");
-    sput("Tips: cat is case-insensitive for FAT.TXT, ls shows all files, Tab twice lists, vim <file> for editing, admin <cmd> as root, stxver for info, rgb/256/colors for 8-bit\n");
+    sput("StrixOS Shell - super friendly! Try: help, list, read, say, about\n");
+    sput("Strix commands: list (=ls), read <file> (=cat), say <txt> (=echo), make <file> (=touch),\n");
+    sput("  goto <folder> (=cd), whereami (=pwd), whoami, wipe (=clear), admin <cmd> (be the boss),\n");
+    sput("  write <file> (=edit), about (=who made this?), colors, moon, poweroff, reboot\n");
+    sput("Old names still work: ls cat echo touch cd pwd sudo clear vim nano edit\n");
 }
 static void do_ps(void){
     sput("PID  STATE    NAME\n");
@@ -231,7 +233,23 @@ static void do_history(void){
         sput("  "); sput(history[i%HIST_SIZE]); sput("\n");
     }
 }
-static void do_uname(void){ sput("StrixOS 1.0 strixos-1.0 x86_64 StrixOS kernel\n"); }
+static void do_uname(void){ sput("StrixOS 1.0 Beta - Strix Kernel x86_64 - Built from scratch by Avi (age 12)\n"); }
+static void do_whereami(void){ sput("/home/strix\n"); }
+static void do_whoami(void){ sput("strix-user - guest of StrixOS\n"); }
+static void do_goto(const char* args){
+    char tmp[64]; size_t i=0; while(args[i]&&i<63){tmp[i]=args[i];i++;} tmp[i]=0; trim(tmp);
+    if(tmp[0]==0){ sput("goto <folder> - StrixOS uses one cozy Nest, try: list\n"); do_ls(); return; }
+    sput("Strix Nest has no sub-folders yet - everything lives together. Showing list:\n");
+    do_ls();
+}
+static void do_about(void){
+    sput("================================================\n");
+    sput("  StrixOS 1.0 Beta - Made by Avi, age 12\n");
+    sput("  100% independent: custom bootloader + Strix Kernel\n");
+    sput("  No Linux. No Unix. No GRUB. Just Strix.\n");
+    sput("  C + Assembly, x86_64, boots on QEMU + real HW\n");
+    sput("================================================\n");
+}
 static void do_uptime(void){
     extern unsigned long timer_ticks(void);
     unsigned long t=timer_ticks();
@@ -629,8 +647,22 @@ static void dispatch(const char* line){
     else if(0==kstrcmp(p,"history")) do_history();
     else if(0==kstrcmp(p,"uname")||0==kstrcmp(p,"uname -a")) do_uname();
     else if(0==kstrcmp(p,"uptime")) do_uptime();
-    else if(0==kstrcmp(p,"poweroff")||0==kstrcmp(p,"shutdown")||0==kstrcmp(p,"halt")) do_poweroff();
-    else if(0==kstrcmp(p,"reboot")) do_reboot();
+    else if(0==kstrcmp(p,"list")||0==kstrncmp(p,"list ",5)) { char b[128]; b[0]='l';b[1]='s'; for(size_t i=4;p[i]&&i<127;i++) b[i-2]=p[i]; b[127]=0; dispatch(b); }
+    else if(0==kstrncmp(p,"read ",5)) { char b[128]; b[0]='c';b[1]='a';b[2]='t'; for(size_t i=4;p[i]&&i<127;i++) b[i-1]=p[i]; b[127]=0; dispatch(b); }
+    else if(0==kstrcmp(p,"read")) dispatch("cat");
+    else if(0==kstrncmp(p,"say ",4)) { char b[128]; b[0]='e';b[1]='c';b[2]='h';b[3]='o'; for(size_t i=3;p[i]&&i<127;i++) b[i+1]=p[i]; b[127]=0; dispatch(b); }
+    else if(0==kstrncmp(p,"make ",5)) { char b[128]; b[0]='t';b[1]='o';b[2]='u';b[3]='c';b[4]='h'; for(size_t i=4;p[i]&&i<127;i++) b[i+1]=p[i]; b[127]=0; dispatch(b); }
+    else if(0==kstrncmp(p,"goto",4)&&(p[4]==' '||p[4]==0)) { char *a=p+4; while(*a==' ') a++; do_goto(a); }
+    else if(0==kstrncmp(p,"cd",2)&&(p[2]==' '||p[2]==0)) { char *a=p+2; while(*a==' ') a++; do_goto(a); }
+    else if(0==kstrcmp(p,"whereami")||0==kstrcmp(p,"pwd")) do_whereami();
+    else if(0==kstrcmp(p,"whoami")) do_whoami();
+    else if(0==kstrcmp(p,"wipe")||0==kstrcmp(p,"clean")) do_clear();
+    else if(0==kstrncmp(p,"write ",6)) do_vim(p+6);
+    else if(0==kstrcmp(p,"write")) do_vim("");
+    else if(0==kstrcmp(p,"about")||0==kstrcmp(p,"aboutme")||0==kstrcmp(p,"strix")) do_about();
+    else if(0==kstrcmp(p,"bye")||0==kstrcmp(p,"goodbye")||0==kstrcmp(p,"shutdown")) do_poweroff();
+    else if(0==kstrcmp(p,"poweroff")||0==kstrcmp(p,"halt")) do_poweroff();
+    else if(0==kstrcmp(p,"reboot")||0==kstrcmp(p,"restart")) do_reboot();
     else if(0==kstrcmp(p,"exit")||0==kstrcmp(p,"quit")||0==kstrcmp(p,"logout")){ sput("logout\n"); shell_logout=1; }
     else {
         if(0==kstrncmp(p,"cat",3) && p[3]!=' ' && p[3]!=0){
@@ -668,7 +700,7 @@ void shell_task(void){
     fb_fill_rect(fb_get_width()-4,0,4,fb_get_height(), rgb(0,255,0));
     while(1){
         tty_login(0);
-        const char* banner="StrixOS shell - type help  (bash-like: history up/down Tab Ctrl-A/E/K/U/W) - display: 720p/1080p supported\n";
+        const char* banner="Welcome to StrixOS! Made from scratch by Avi (12). Type help - try list, say hi, about\n";
         sput(banner);
         char line[MAX_LINE];
         int len=0; int pos=0;

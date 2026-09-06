@@ -55,17 +55,21 @@ int elf_load(void* data, void (**entry)(void)){
             uint64_t filesz=ph[i].filesz;
             uint64_t memsz=ph[i].memsz;
             uint64_t off=ph[i].off;
-            // For static PIE, vaddr is offset, we load at data + off -> vaddr relative to 0
-            // Simplest: if vaddr < 0x100000, allocate at vaddr else use kmalloc and copy then jump via entry offset
-            // For musl static, vaddr ~0x400000, we need to map
-            // Use identity: copy to vaddr if vaddr > 0x100000 and pmm available, else to heap and adjust entry
-            // For now, copy to vaddr directly (identity mapped 0-64M)
-            if(vaddr < 0x40000000){
-                // ensure pages present (0-64M already mapped)
+            
+            // Ensure pages are mapped and copy data
+            // For identity-mapped region (0-64MB), just copy directly
+            if(vaddr >= 0x400000){ // Only map loadable segments at their virtual addresses
                 uint8_t *dst=(uint8_t*)(uintptr_t)vaddr;
                 uint8_t *src=(uint8_t*)data + off;
+                
+                // Copy file contents
                 for(uint64_t k=0;k<filesz;k++) dst[k]=src[k];
+                // Zero BSS
                 for(uint64_t k=filesz;k<memsz;k++) dst[k]=0;
+                
+                // Flush TLB for this range
+                asm volatile("invlpg (%0)" :: "r"(dst) : "memory");
+                asm volatile("invlpg (%0)" :: "r"(dst + filesz) : "memory");
             }
         }
     }
