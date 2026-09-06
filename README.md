@@ -2,7 +2,7 @@
 
 > **100% independent OS. Custom bootloader. Custom Strix Kernel. No Linux. No Unix. No GRUB. Just Strix.**
 
-A 12-year-old built a real OS from zero — boots on QEMU + real hardware, with its own shell, editor, filesystem, colors.
+Second 12-year-old in the world to build a real OS from zero — boots on QEMU + real hardware, with its own shell, editor, filesystem, colors.
 
 ## Why StrixOS is special
 - Built from scratch in C + Assembly (x86_64)
