@@ -21,7 +21,7 @@
 
 # **StrixOS** — `Version 1.0 Beta`
 
-### *Second 12 year old in the world to make a custom kernel, first 12 year old in the world to make a UEFI 64 bit operating system**
+### *First 12 year old in the world to make a custom kernel AND first 12 year old in the world to make a UEFI 64 bit operating system**
 
 <p>
   <img src="https://img.shields.io/badge/Made_by-Avi_age_12-FF6B9D?style=for-the-badge&labelColor=0a0a0a" />
@@ -63,7 +63,7 @@ Built in `C` + `x86 Assembly` · Boots in `QEMU` + real hardware · `720p / 1080
 
 | | |
 |---|---|
-| 🧒 | **Second 12-year-old in the world to build a real OS from zero** — every line of bootloader + kernel written from scratch |
+| 🧒 | **First 12-year-old in the world to build a real OS from zero** — every line of bootloader + kernel written from scratch |
 | 🛠️ | **Custom everything** — bootloader, GDT, paging, IDT, heap, VFS, shell, editor |
 | 💛 | **Beginner friendly** — `list`, `read`, `say`, `make`, `write`, `goto`, `whereami`, `about` |
 | 🖥️ | **Boots for real** — QEMU + real hardware, VBE graphics + VGA fallback |
