@@ -10,12 +10,16 @@ section .text
 extern kmain
 
 global _start
+global boot_info_ptr
+section .data
+boot_info_ptr: dq 0
+section .text
 _start:
     ; Set up stack (16KB at 0x90000, growing downward)
     mov rsp, 0x90000
 
-    ; Save bootloader-provided info (if any)
-    ; RDI, RSI are available from bootloader
+    ; Save bootloader-provided bootinfo pointer (RDI = 0x6000 on UEFI)
+    mov [rel boot_info_ptr], rdi
 
     ; Enable SSE for user binaries (nano uses SSE)
     mov rax, cr0

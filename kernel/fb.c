@@ -1,6 +1,7 @@
 #include "fb.h"
 #include "io.h"
 #include "syscall.h"
+#include "bootinfo.h"
 
 static uint8_t* fb_base8 = (uint8_t*)0xE0000000ULL;
 static uint32_t* fb_base = (uint32_t*)0xE0000000ULL;
@@ -41,6 +42,25 @@ extern void vga_putchar(char c);
 
 void fb_init(void){
     uint8_t* flag=(uint8_t*)0x9000;
+    // UEFI/GOP path: bootloader passed bootinfo at 0x6000 (no VGA text under UEFI)
+    struct strix_bootinfo *bi = (struct strix_bootinfo*)STRIX_BOOTINFO_ADDR;
+    if(bi->magic == STRIX_BOOTINFO_MAGIC && bi->boot_mode == 2 && bi->fb_base != 0){
+        fb_phys = bi->fb_base;
+        fb_base = (uint32_t*)(uintptr_t)bi->fb_base;
+        fb_base8 = (uint8_t*)(uintptr_t)bi->fb_base;
+        fb_width = (bi->fb_width >= 640 && bi->fb_width <= 3840) ? bi->fb_width : 1024;
+        fb_height = (bi->fb_height >= 480 && bi->fb_height <= 2160) ? bi->fb_height : 768;
+        fb_bpp = 32;
+        fb_pitch = bi->fb_pitch ? (int)bi->fb_pitch : fb_width;
+        fb_pitch_bytes = fb_pitch * 4;
+        fb_w = fb_width / 8; fb_h = fb_height / 8;
+        fb_cx = 0; fb_cy = 0;
+        fb_graphics = 1;
+        for(int y = 0; y < fb_height; y++)
+            for(int x = 0; x < fb_width; x++) fb_put32(x, y, 0);
+        serial_puts("[FB] UEFI GOP 32bpp ready\n");
+        return;
+    }
     // force VGA text for stability - VBE 8-bit 256-col ready via FB path (enable when paging covers phys)
     fb_graphics=0; fb_pitch=80; fb_pitch_bytes=80*4; fb_w=80; fb_h=25; fb_cx=0; fb_cy=0;
     serial_puts("[FB] VGA text 80x25 8-bit 256-col ready (VBE disabled for PF stability)\n");

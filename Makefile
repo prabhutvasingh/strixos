@@ -82,7 +82,7 @@ KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 ISO = $(BUILD_DIR)/strixos.iso
 ISO_DIR = $(BUILD_DIR)/iso
 
-.PHONY: all iso clean run run-gui run-iso debug
+.PHONY: all iso clean run run-gui run-iso debug uefi run-uefi run-uefi-nographic
 
 all: $(BUILD_DIR)/os-image.bin $(ISO)
 
@@ -239,6 +239,47 @@ run-iso: $(ISO)
 
 debug: $(BUILD_DIR)/os-image.bin
 	$(QEMU) -drive file=$<,format=raw,index=0,media=disk -m 256 -serial stdio -display none -vga std -S -gdb tcp::1234 &
+
+# --- UEFI (dual-boot: BIOS path above untouched) ---
+UEFI_SRC = uefi/loader.c
+UEFI_OBJ = $(BUILD_DIR)/uefi-loader.o
+UEFI_EFI = $(BUILD_DIR)/BOOTX64.EFI
+UEFI_IMG = $(BUILD_DIR)/strix-uefi.img
+OVMF_CODE = /usr/share/edk2-ovmf/x64/OVMF_CODE.4m.fd
+
+$(UEFI_OBJ): $(UEFI_SRC) uefi/efi.h kernel/bootinfo.h
+	@mkdir -p $(BUILD_DIR)
+	$(CC) -ffreestanding -mabi=ms -mgeneral-regs-only -mcmodel=large -fno-stack-protector -fno-pie -no-pie \
+	  -Wall -Wextra -I uefi/ -I kernel/ -fno-builtin -g -c $< -o $@
+
+$(UEFI_EFI): $(UEFI_OBJ) uefi/link.ld
+	$(LD) -mi386pep --subsystem 10 --entry efi_main --strip-debug --discard-all -o $@ $<
+	objcopy -R .debug_info -R .debug_abbrev -R .debug_aranges -R .debug_line -R .debug_str -R .comment -R .note* $@
+	@echo "UEFI loader: $$(wc -c < $@) bytes -> $@"
+
+UEFI_PART_OFF = 1048576
+$(UEFI_IMG): $(UEFI_EFI) $(KERNEL_BIN)
+	@echo "=== Building UEFI ESP image (MBR + FAT ESP) ==="
+	dd if=/dev/zero of=$@ bs=1M count=64 2>/dev/null
+	printf 'label: dos\nstart=2048, type=ef\n' | sfdisk $@ >/dev/null 2>&1
+	mkdir -p $(BUILD_DIR)/esp/EFI/BOOT
+	cp $(UEFI_EFI) $(BUILD_DIR)/esp/EFI/BOOT/BOOTX64.EFI
+	cp $(KERNEL_BIN) $(BUILD_DIR)/esp/kernel.bin
+	mformat -i $@@@$(UEFI_PART_OFF) -v STRIXESP ::
+	mmd -i $@@@$(UEFI_PART_OFF) ::/EFI ::/EFI/BOOT
+	mcopy -i $@@@$(UEFI_PART_OFF) $(BUILD_DIR)/esp/EFI/BOOT/BOOTX64.EFI ::/EFI/BOOT/
+	mcopy -i $@@@$(UEFI_PART_OFF) $(BUILD_DIR)/esp/kernel.bin ::
+	@echo "=== $@ built (MBR ESP: BOOTX64.EFI + kernel.bin) ==="
+
+uefi: $(UEFI_IMG)
+
+run-uefi: $(UEFI_IMG)
+	$(QEMU) -drive file=$<,format=raw,index=0,media=disk -m 256 -serial stdio -vga std \
+	  -display gtk,zoom-to-fit=off -drive if=pflash,format=raw,readonly=on,file=$(OVMF_CODE)
+
+run-uefi-nographic: $(UEFI_IMG)
+	$(QEMU) -drive file=$<,format=raw,index=0,media=disk -m 256 -serial stdio -display none -vga std \
+	  -drive if=pflash,format=raw,readonly=on,file=$(OVMF_CODE)
 
 clean:
 	rm -rf $(BUILD_DIR)
