@@ -82,7 +82,7 @@ KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 ISO = $(BUILD_DIR)/strixos.iso
 ISO_DIR = $(BUILD_DIR)/iso
 
-.PHONY: all iso clean run run-gui run-iso debug uefi run-uefi run-uefi-nographic
+.PHONY: all iso clean run run-gui run-iso debug uefi run-uefi run-uefi-nographic iso-uefi run-iso-uefi
 
 all: $(BUILD_DIR)/os-image.bin $(ISO)
 
@@ -270,6 +270,36 @@ $(UEFI_IMG): $(UEFI_EFI) $(KERNEL_BIN)
 	mcopy -i $@@@$(UEFI_PART_OFF) $(BUILD_DIR)/esp/EFI/BOOT/BOOTX64.EFI ::/EFI/BOOT/
 	mcopy -i $@@@$(UEFI_PART_OFF) $(BUILD_DIR)/esp/kernel.bin ::
 	@echo "=== $@ built (MBR ESP: BOOTX64.EFI + kernel.bin) ==="
+
+# --- Bootable ISO (UEFI El Torito; plain FAT EFI image, no MBR) ---
+UEFI_FAT = $(BUILD_DIR)/esp-fat.img
+UEFI_ISO = $(BUILD_DIR)/strixos-uefi.iso
+$(UEFI_FAT): $(UEFI_EFI) $(KERNEL_BIN)
+	@echo "=== Building El Torito FAT image ==="
+	dd if=/dev/zero of=$@ bs=1M count=12 2>/dev/null
+	mformat -i $@ -v STRIXEFI ::
+	mmd -i $@ ::/EFI ::/EFI/BOOT
+	mkdir -p $(BUILD_DIR)/esp/EFI/BOOT
+	cp $(UEFI_EFI) $(BUILD_DIR)/esp/EFI/BOOT/BOOTX64.EFI
+	cp $(KERNEL_BIN) $(BUILD_DIR)/esp/kernel.bin
+	mcopy -i $@ $(BUILD_DIR)/esp/EFI/BOOT/BOOTX64.EFI ::/EFI/BOOT/
+	mcopy -i $@ $(BUILD_DIR)/esp/kernel.bin ::
+	@echo "=== $@ built ==="
+
+$(UEFI_ISO): $(UEFI_FAT)
+	@echo "=== Building bootable UEFI ISO ==="
+	@mkdir -p $(BUILD_DIR)/iso-uefi
+	@cp $(UEFI_FAT) $(BUILD_DIR)/iso-uefi/esp-fat.img
+	@echo "StrixOS 1.0 Beta UEFI - by Avi (12)" > $(BUILD_DIR)/iso-uefi/README.txt
+	@echo "Boot: burn to USB (dd) or boot ISO in UEFI mode" >> $(BUILD_DIR)/iso-uefi/README.txt
+	@xorriso -as mkisofs -o $@ -V STRIXOS_UEFI -e esp-fat.img -no-emul-boot -R -J $(BUILD_DIR)/iso-uefi 2>&1 | tail -n 4
+	@echo "ISO  : $$(wc -c < $@) bytes -> $@"
+
+iso-uefi: $(UEFI_ISO)
+
+run-iso-uefi: $(UEFI_ISO)
+	$(QEMU) -cdrom $< -m 256 -serial stdio -vga std -display gtk,zoom-to-fit=off -boot d \
+	  -drive if=pflash,format=raw,readonly=on,file=$(OVMF_CODE)
 
 uefi: $(UEFI_IMG)
 

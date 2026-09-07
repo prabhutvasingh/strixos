@@ -104,6 +104,14 @@ StrixOS> bye
 
 </td></tr></table>
 
+## <samp>◆ BOOTABLE ISO <sub>UEFI — real hardware ready</sub></samp>
+
+```bash
+make -C StrixOS iso-uefi      # -> build/strixos-uefi.iso (UEFI El Torito)
+make -C StrixOS run-iso-uefi  # test it in QEMU + OVMF
+# Real USB stick: sudo dd if=build/strixos-uefi.iso of=/dev/sdX bs=4M status=progress
+```
+
 ---
 
 ## <samp>◆ SHELL — Strix Shell (friendly first)</samp>
