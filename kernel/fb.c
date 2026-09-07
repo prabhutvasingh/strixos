@@ -301,7 +301,7 @@ void rgb_print(const char* t,uint8_t r,uint8_t g,uint8_t b){
     l=0; v=g; if(v==0) rev[l++]='0'; else{ char tmp[4];int tt=0; while(v){tmp[tt++]='0'+v%10; v/=10;} while(tt--) rev[l++]=tmp[tt]; } sys_write(1,rev,l); sys_write(1,";",1);
     l=0; v=b; if(v==0) rev[l++]='0'; else{ char tmp[4];int tt=0; while(v){tmp[tt++]='0'+v%10; v/=10;} while(tt--) rev[l++]=tmp[tt]; } sys_write(1,rev,l); sys_write(1,"m",1);
     size_t ll=0; while(t[ll]) ll++; sys_write(1,t,ll); sys_write(1,"\x1b[0m",4);
-    if(fb_graphics) for(size_t i=0;t[i];i++) fb_putchar(t[i]);
+    // NOTE: sys_write already routes to fb_putchar in graphics mode - no second draw
 }
 void rgb_print_bg(const char* t,uint8_t r,uint8_t g,uint8_t b,uint8_t br,uint8_t bg,uint8_t bb){
     sys_write(1,"\x1b[38;2;",7); char rev[8]; int l=0; int v=r; if(v==0) rev[l++]='0'; else{ char tmp[4];int tt=0; while(v){tmp[tt++]='0'+v%10; v/=10;} while(tt--) rev[l++]=tmp[tt]; } sys_write(1,rev,l); sys_write(1,";",1);
@@ -311,5 +311,5 @@ void rgb_print_bg(const char* t,uint8_t r,uint8_t g,uint8_t b,uint8_t br,uint8_t
     l=0; v=bg; if(v==0) rev[l++]='0'; else{ char tmp[4];int tt=0; while(v){tmp[tt++]='0'+v%10; v/=10;} while(tt--) rev[l++]=tmp[tt]; } sys_write(1,rev,l); sys_write(1,";",1);
     l=0; v=bb; if(v==0) rev[l++]='0'; else{ char tmp[4];int tt=0; while(v){tmp[tt++]='0'+v%10; v/=10;} while(tt--) rev[l++]=tmp[tt]; } sys_write(1,rev,l); sys_write(1,"m",1);
     size_t ll=0; while(t[ll]) ll++; sys_write(1,t,ll); sys_write(1,"\x1b[0m",4);
-    if(fb_graphics) for(size_t i=0;t[i];i++) fb_putchar(t[i]);
+    // NOTE: sys_write already routes to fb_putchar in graphics mode - no second draw
 }
