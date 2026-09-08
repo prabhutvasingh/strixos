@@ -21,7 +21,7 @@
 
 # **StrixOS** — `Version 1.0 Beta`
 
-### *First 12 year old in the world to make a custom kernel AND first 12 year old in the world to make a UEFI 64 bit operating system**
+### *Fully Custom UEFI 63 Bit OS from Scratch*
 
 <p>
   <img src="https://img.shields.io/badge/Made_by-Avi_age_12-FF6B9D?style=for-the-badge&labelColor=0a0a0a" />
