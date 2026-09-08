@@ -24,7 +24,7 @@
 ### *Fully Custom UEFI 64 Bit OS from Scratch*
 
 <p>
-  <img src="https://img.shields.io/badge/Made_by-Avi_age_12-FF6B9D?style=for-the-badge&labelColor=0a0a0a" />
+  <img src="https://img.shields.io/badge/Made_by-Avi_age_14-FF6B9D?style=for-the-badge&labelColor=0a0a0a" />
   <img src="https://img.shields.io/badge/100%25-Independent-00FF88?style=for-the-badge&labelColor=0a0a0a" />
   <img src="https://img.shields.io/badge/No_Linux-No_Unix-No_GRUB-00BFFF?style=for-the-badge&labelColor=0a0a0a" />
 </p>
