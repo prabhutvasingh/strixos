@@ -191,7 +191,7 @@ StrixOS/
 
 <p>
   <img src="https://img.shields.io/badge/StrixOS-1.0_BETA-00FF88?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/MADE_BY_AVI-AGE_12-FF6B9D?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/MADE_BY_AVI-AGE-FF6B9D?style=for-the-badge" />
   <img src="https://img.shields.io/badge/BOOTING-✓-00BFFF?style=for-the-badge" />
 </p>
 
