@@ -21,7 +21,7 @@
 
 # **StrixOS** — `Version 1.0 Beta`
 
-### *Fully Custom UEFI 63 Bit OS from Scratch*
+### *Fully Custom UEFI 64 Bit OS from Scratch*
 
 <p>
   <img src="https://img.shields.io/badge/Made_by-Avi_age_12-FF6B9D?style=for-the-badge&labelColor=0a0a0a" />
